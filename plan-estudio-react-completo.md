@@ -8,9 +8,9 @@
 ## Fase 1 — Fundamentos sólidos
 **Semanas 1–2 · ~15 hs**
 
-### ¿Cómo funciona React por dentro?
+### ¿Qué es React y cómo funciona por dentro?
 *El motor antes que el volante*
-
+- ¿Que es React?
 - Virtual DOM vs DOM real: qué problema resuelve
 - Reconciliation y el algoritmo de diffing
 - Fiber: qué es y por qué React lo usa
