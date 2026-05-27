@@ -186,4 +186,24 @@ React compara:
 
 y modifica únicamente lo necesario en el DOM real.
 
-   
+
+## Fiber: ¿Qué es y por qué React lo usa?
+
+Fiber es la arquitectura interna moderna de React encargada de gestionar el renderizado y la reconciliación.
+
+React usa Fiber para dividir el trabajo en pequeñas tareas, priorizar actualizaciones, pausar y reanudar renders y evitar bloquear la interfaz.
+
+Fiber permite que React renderice de forma más eficiente y flexible.
+
+Gracias a Fiber, React puede implementar características modernas como:
+
+* Concurrent Rendering,
+* Suspense,
+* y Transitions.
+
+<span style="background-color:red; color:white">TODO</span> Esto lo veremos mas adelante..
+
+**Nota:**
+> Cuando decimos que Fiber es una “arquitectura”, nos referimos a la forma interna en la que React está organizado para resolver el renderizado y las actualizaciones. Es decir, las estructuras de datos que usa, cómo recorre componentes, cómo divide tareas, cómo prioriza trabajo y cómo procesa renders.
+
+> Ademas "Gestionar el renderizado” significa controlar todo el proceso mediante el cual React, detecta cambios, vuelve a ejecutar componentes, compara la UI anterior con la nueva, decide qué actualizar y aplica cambios al DOM real.
