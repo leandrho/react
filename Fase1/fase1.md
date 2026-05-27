@@ -268,3 +268,38 @@ Ocurre después del commit porque la UI ya está actualizada.
 En React, una actualización normalmente pasa por tres fases principales: Render, Commit y Effects. La **Render Phase** es donde React ejecuta los componentes, genera el nuevo Virtual DOM y compara cambios mediante reconciliación para calcular cómo debería verse la interfaz. En esta fase React todavía no modifica el DOM real.
 
 Luego ocurre la **Commit Phase**, donde React aplica al DOM real los cambios calculados durante el render, actualizando finalmente la interfaz visible. Después llega la **Effects Phase**, donde React ejecuta los efectos secundarios, principalmente el código dentro de los `useEffect`, como fetch de datos, subscriptions, listeners, timers y otras operaciones externas.
+
+## ¿Por qué React re-renderiza y cuándo no debería?
+
+### ¿Por qué React re-renderiza?
+
+React re-renderiza un componente cuando detecta un cambio que podría afectar la interfaz.
+
+Las causas principales son:
+
+* cambio de estado (`useState`),
+* cambio de props,
+* cambio de contexto (`Context API`),
+* re-render del componente padre,
+* o actualización forzada.
+
+Cuando eso ocurre, React vuelve a ejecutar el componente para calcular nuevamente la UI.
+
+### Importante
+
+Re-renderizar NO significa recrear todo el DOM, ni volver a pintar toda la página. Significa volver a ejecutar el componente para obtener una nueva representación virtual de la UI.
+Después React decide mediante reconciliación si realmente necesita actualizar el DOM real.
+
+### ¿Cuándo NO debería re-renderizar?
+
+Idealmente, un componente no debería re-renderizar si:
+
+* sus props no cambiaron,
+* su estado no cambió,
+* su contexto no cambió,
+* y su UI resultante sería exactamente la misma.
+
+Porque renderizar innecesariamente consume CPU, genera trabajo extra y puede afectar rendimiento en aplicaciones grandes.
+
+React prefiere renderizar de más antes que arriesgar inconsistencias en la interfaz.
+Por eso el re-render es algo normal en React, no un error.
