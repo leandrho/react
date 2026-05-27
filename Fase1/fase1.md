@@ -207,3 +207,64 @@ Gracias a Fiber, React puede implementar características modernas como:
 > Cuando decimos que Fiber es una “arquitectura”, nos referimos a la forma interna en la que React está organizado para resolver el renderizado y las actualizaciones. Es decir, las estructuras de datos que usa, cómo recorre componentes, cómo divide tareas, cómo prioriza trabajo y cómo procesa renders.
 
 > Ademas "Gestionar el renderizado” significa controlar todo el proceso mediante el cual React, detecta cambios, vuelve a ejecutar componentes, compara la UI anterior con la nueva, decide qué actualizar y aplica cambios al DOM real.
+
+#### En Resumen: Virtual DOM, Reconciliation, Diffing y Fiber
+
+React utiliza un Virtual DOM, que es una representación liviana del DOM real hecha con objetos JavaScript. Cuando el estado o las props cambian, React genera un nuevo árbol virtual y realiza un proceso llamado reconciliación (Reconciliation), donde compara el Virtual DOM anterior con el nuevo para determinar qué partes de la interfaz cambiaron.
+
+Para realizar esa comparación, React utiliza un Diffing Algorithm, un algoritmo optimizado que detecta diferencias entre ambos árboles virtuales y permite actualizar únicamente las partes necesarias del DOM real de manera eficiente.
+
+Todo este proceso es gestionado internamente por Fiber, la arquitectura moderna de React encargada de administrar el renderizado y la reconciliación, permitiendo dividir, priorizar y optimizar las actualizaciones de la interfaz de usuario.
+
+## Renders, Commits y Efectos: _las tres fases del ciclo_
+
+En React, una actualización normalmente pasa por tres fases principales: **Render, Commit, Effects**.
+Nota: 
+> Con "Actualización" nos referimos a cualquier cambio que obliga a React a volver a renderizar parte de la interfaz.
+
+### Render Phase
+
+La Render Phase es la fase donde React calcula cómo debería verse la interfaz según el estado y las props actuales.
+
+En esta fase React:
+
+* ejecuta componentes,
+* genera el nuevo Virtual DOM,
+* compara cambios mediante reconciliación,
+* y determina qué debe actualizarse.
+
+React todavía NO modifica el DOM real.
+
+### Commit Phase
+
+La Commit Phase es la fase donde React aplica al DOM real los cambios calculados durante el render.
+
+En esta fase React:
+
+* crea nodos,
+* elimina nodos,
+* actualiza atributos,
+* modifica texto,
+* y sincroniza finalmente la UI visible.
+
+Acá React sí toca el DOM real.
+
+### Effects Phase
+
+La Effects Phase es la fase donde React ejecuta efectos secundarios después de actualizar la interfaz en el DOM real. 
+
+En esta fase React ejecuta principalmente el código contenido dentro de los `useEffect`.
+
+Acá suelen realizarse operaciones como:
+* fetch de datos,
+* timers,
+* subscriptions,
+* listeners,
+* y otras operaciones externas o side effects.
+
+Ocurre después del commit porque la UI ya está actualizada.
+
+### En Resumen: *Las 3 fases del ciclo*
+En React, una actualización normalmente pasa por tres fases principales: Render, Commit y Effects. La **Render Phase** es donde React ejecuta los componentes, genera el nuevo Virtual DOM y compara cambios mediante reconciliación para calcular cómo debería verse la interfaz. En esta fase React todavía no modifica el DOM real.
+
+Luego ocurre la **Commit Phase**, donde React aplica al DOM real los cambios calculados durante el render, actualizando finalmente la interfaz visible. Después llega la **Effects Phase**, donde React ejecuta los efectos secundarios, principalmente el código dentro de los `useEffect`, como fetch de datos, subscriptions, listeners, timers y otras operaciones externas.
