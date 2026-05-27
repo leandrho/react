@@ -30,6 +30,7 @@
 - Fragmentos: `<></>` y `Fragment`
 - Expresiones, condicionales y listas en JSX
 - Reglas de `key` y por qué importan
+- Pasar `ref` como una prop común (React 19)
 
 ---
 
@@ -85,6 +86,7 @@
 - `useCallback`: referencias estables de funciones
 - `React.memo`: evitar re-renders innecesarios
 - Cuándo optimizar (y cuándo es prematuro)
+- El futuro de la optimización: React Compiler vs `useMemo`/`useCallback` manual"
 
 ---
 
@@ -92,12 +94,17 @@
 *Estado más complejo*
 
 - `useReducer`: cuándo reemplaza a `useState`
-- Context API: crear, proveer y consumir contexto
+- Context API: crear, proveer y consumir contexto con `<Context>`
 - Context + useReducer = mini Redux
 - Problemas de performance del contexto
 - Alternativas modernas: Zustand, Jotai
 
 🔗 Ver: Arquitectura frontend (Core)
+
+---
+
+### Hooks Avanzados
+- El nuevo hook `use`: Consumir contextos y promesas de forma condicional.
 
 ---
 
@@ -139,6 +146,11 @@
 - Manejo de loading, error y stale data
 - Axios vs fetch: cuándo usar cada uno
 - Optimistic updates
+- React 19 **Actions**
+    - Manejo nativo de formularios asíncronos con **Actions**.
+    - Uso de `useActionState` y `useFormStatus` para feedback de UI.
+    - UI predictiva con `useOptimistic`.
+    - Discusión técnica: Cuándo usar las **Actions** nativas de React 19 vs cuándo delegar a React Hook Form + TanStack Query.
 
 🔗 Ver: Manejo real de APIs (Core)
 
@@ -234,7 +246,9 @@
 ---
 
 ### Next.js *(opcional pero muy valioso)*
-*React en producción real*
+*React en producción real.*
+
+*Ver desde React 19, donde los Server Components (RSC) y Server Actions ya son nativos del core de React*
 
 - App Router y Server Components
 - SSR, SSG, ISR: cuándo usar cada uno
