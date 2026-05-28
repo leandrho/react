@@ -1,4 +1,7 @@
 # Fase 1 — Fundamentos sólidos
+¿Qué es React y cómo funciona por dentro?
+
+El motor antes que el volante
 
 ## ¿Qué es React?
 
