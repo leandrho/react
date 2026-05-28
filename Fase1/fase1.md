@@ -269,6 +269,32 @@ En React, una actualización normalmente pasa por tres fases principales: Render
 
 Luego ocurre la **Commit Phase**, donde React aplica al DOM real los cambios calculados durante el render, actualizando finalmente la interfaz visible. Después llega la **Effects Phase**, donde React ejecuta los efectos secundarios, principalmente el código dentro de los `useEffect`, como fetch de datos, subscriptions, listeners, timers y otras operaciones externas.
 
+### Esto es de la doc oficial de React, cabe aclarar que le falta la fase de efecto, pero es interesante leerlo
+El proceso de mostrar componentes en pantalla en React se divide en tres pasos fundamentales que garantizan que la interfaz de usuario sea consistente y eficiente: **disparar (trigger)**, **renderizar (render)** y **confirmar (commit)**.
+
+### Paso 1: Disparar un renderizado
+Existen dos motivos principales por los cuales un componente inicia este proceso:
+*   **Renderizado inicial:** Ocurre cuando la aplicación arranca por primera vez. Se realiza llamando a `createRoot` con el nodo de destino del DOM y ejecutando su método `render` con el componente raíz.
+*   **Actualizaciones de estado:** Una vez que la aplicación ya se ha renderizado inicialmente, cualquier actualización en el **estado** del componente (o de uno de sus ancestros) mediante una función de actualización (`set`) dispara automáticamente un nuevo renderizado. Estas actualizaciones se imaginan como pedidos adicionales que un cliente hace en un restaurante después del primer pedido.
+
+### Paso 2: React renderiza los componentes
+En esta etapa, React llama a tus componentes para determinar qué debe mostrarse en la pantalla. **"Renderizar" es, básicamente, React llamando a las funciones de tus componentes**.
+*   **Proceso recursivo:** Si un componente devuelve otros componentes, React renderizará esos componentes a continuación. Este proceso continúa de forma recursiva hasta que no queden más componentes anidados y React sepa exactamente qué debería mostrarse.
+*   **Cálculo puro:** El renderizado debe ser siempre una **operación pura**. Esto significa que:
+    *   Debe devolver el **mismo JSX** ante las mismas entradas.
+    *   No debe modificar objetos o variables que existieran antes del renderizado (debe "ocuparse de sus propios asuntos").
+*   **Optimización:** Durante un re-renderizado, React calcula cuáles de las propiedades han cambiado desde el renderizado anterior, pero no hace nada con esa información hasta el siguiente paso.
+
+### Paso 3: React confirma los cambios en el DOM
+Después de realizar los cálculos del paso anterior, React procede a modificar el DOM real:
+*   **Para el renderizado inicial:** React utiliza la API `appendChild()` del DOM para insertar todos los nodos que ha creado en la pantalla.
+*   **Para los re-renderizados:** React aplica únicamente las **operaciones mínimas necesarias** (calculadas durante el renderizado) para que el DOM coincida con la salida más reciente.
+*   **Eficiencia:** React **solo cambia los nodos del DOM si existe una diferencia** entre el renderizado actual y el anterior. Por ejemplo, si un componente muestra la hora y tiene un campo de texto, React solo actualizará el texto de la hora y no tocará el contenido del campo de texto si este no ha cambiado en el código.
+
+### Epílogo: Pintado del navegador
+Una vez que React ha terminado de actualizar el DOM y el ciclo de "renderizado y confirmación" concluye, el navegador realiza el proceso de **"pintado" (painting)** de la pantalla para que el usuario pueda ver los cambios visualmente.
+
+
 ## ¿Por qué React re-renderiza y cuándo no debería?
 
 ### ¿Por qué React re-renderiza?
