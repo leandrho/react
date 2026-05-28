@@ -30,7 +30,6 @@
 - Fragmentos: `<></>` y `Fragment`
 - Expresiones, condicionales y listas en JSX
 - Reglas de `key` y por qué importan
-- Pasar `ref` como una prop común (React 19)
 
 ---
 
@@ -87,6 +86,10 @@
 - `React.memo`: evitar re-renders innecesarios
 - Cuándo optimizar (y cuándo es prematuro)
 - El futuro de la optimización: React Compiler vs `useMemo`/`useCallback` manual"
+- Refs avanzadas
+    - `forwardRef`
+    - `useImperativeHandle`
+    - React 19 → `ref` como prop común
 
 ---
 
