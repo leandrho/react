@@ -398,6 +398,33 @@ Aunque las props no cambien, el resultado visual cambia porque el componente mod
 >Por eso React busca que el render de los componentes sea lo más puro y predecible posible, aislando los side effects fuera del render mediante `useEffect`. La idea es separar el cálculo de la interfaz de las operaciones externas para que React pueda renderizar, reconciliar y optimizar la UI de forma segura y consistente.
 
 
+## ¿Cuándo dividir un componente?
+
+Dividir componentes consiste en separar partes de la interfaz en componentes más pequeños, reutilizables y con responsabilidades más claras.
+
+Un componente suele dividirse cuando:
+
+* empieza a crecer demasiado,
+* mezcla muchas responsabilidades,
+* contiene lógica difícil de mantener,
+* repite partes de UI,
+* o tiene secciones que podrían reutilizarse en otros lugares.
+
+Dividir componentes mejora legibilidad, reutilización, mantenibilidad, testing y organización del código.
+
+### La división no se hace “porque sí”.
+
+Separar demasiado también puede:
+
+* complicar la estructura,
+* generar props innecesarias,
+* y hacer más difícil seguir el flujo de datos.
+
+La idea es encontrar un equilibrio donde cada componente tenga una responsabilidad clara y una interfaz simple.
+
+Cada componente encapsula una parte específica de la interfaz y su lógica relacionada.
+
+Un buen componente normalmente tiene una responsabilidad clara, es fácil de entender y puede reutilizarse o modificarse sin afectar toda la aplicación.
 
 
 
