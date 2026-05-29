@@ -161,7 +161,7 @@ o:
 ```
 ### Props Typescript
 
-En React es muy común utilizar TypeScript para tipar las `props` de los componentes. Esto permite definir explícitamente qué datos puede recibir un componente, mejorando la seguridad, el autocompletado y la detección temprana de errores durante el desarrollo.
+Si estas utilizando `typescript` podemos tipar las `props` de los componentes. Esto permite definir explícitamente qué datos puede recibir un componente, mejorando la seguridad, el autocompletado y la detección temprana de errores durante el desarrollo.
 
 Normalmente se define un `type` o `interface` para describir la estructura de las `props` y luego se utiliza ese tipo en los parámetros del componente. Además, TypeScript permite marcar `props` opcionales, tipar funciones, objetos, arrays y cualquier otro valor que el componente necesite recibir.
 
@@ -192,6 +192,155 @@ Uso:
 <Button text="Delete" disabled />
 ```
 
+## `children` y composición de componentes
+
+`children` es una prop especial que representa todo el contenido colocado entre la etiqueta de apertura y cierre de un componente.
+
+Ejemplo:
+
+```tsx
+type CardProps = {
+  children: React.ReactNode
+}
+
+function Card({ children }: CardProps) {
+  return (
+    <div>
+      {children}
+    </div>
+  )
+}
+```
+
+Uso:
+
+```tsx
+<Card>
+  <h1>Hello</h1>
+  <p>Welcome</p>
+</Card>
+```
+
+Internamente, React transforma ese contenido en la prop `children` y se la pasa al componente.
+
+Conceptualmente:
+
+```tsx
+Card({
+  children: (
+    <>
+      <h1>Hello</h1>
+      <p>Welcome</p>
+    </>
+  )
+})
+```
+
+### ¿Qué puede contener `children`?
+
+`children` puede contener prácticamente cualquier cosa que React pueda renderizar:
+
+* elementos JSX,
+* strings,
+* números,
+* fragments,
+* arrays de elementos,
+* otros componentes,
+* e incluso expresiones dinámicas.
+
+Ejemplo:
+
+```tsx
+<Card>
+  <Button />
+  {"Hello"}
+  {isAdmin && <AdminPanel />}
+</Card>
+```
+
+Por eso normalmente se tipa como:
+
+```tsx
+React.ReactNode
+```
+
+### ¿Qué problema resuelve?
+
+Sin `children`, muchos componentes serían extremadamente rígidos.
+
+Ejemplo rígido:
+
+```tsx
+type CardProps = {
+  title: string
+  text: string
+}
+```
+
+Ese componente solo serviría para una estructura específica.
+
+Con `children`, el componente se vuelve flexible y reutilizable:
+
+```tsx
+<Card>
+  <CustomHeader />
+  <UserInfo />
+  <Footer />
+</Card>
+```
+
+El componente ya no necesita conocer qué contenido renderizará.
+
+### Composición de componentes
+
+La composición es uno de los principios fundamentales de React.
+
+Consiste en construir interfaces complejas combinando componentes más pequeños y reutilizables.
+
+Ejemplo:
+
+```tsx
+<Page>
+  <Sidebar />
+  <Content>
+    <Article />
+  </Content>
+</Page>
+```
+
+Cada componente:
+
+* encapsula responsabilidad,
+* puede reutilizarse,
+* y se combina con otros componentes para formar la UI completa.
+
+
+### `children` como slot dinámico
+
+Mentalmente, `children` funciona como un espacio dinámico donde el componente padre puede insertar contenido.
+
+Por ejemplo:
+
+```tsx
+function Modal({ children }: ModalProps) {
+  return (
+    <div className="modal">
+      {children}
+    </div>
+  )
+}
+```
+
+El modal controla:
+
+* estructura,
+* estilos,
+* comportamiento,
+
+pero el contenido interno queda completamente libre.
+
+#### En resumen:
+`children` permite pasar interfaz dentro de otros componentes, haciendo posible la composición, que es el mecanismo principal que React utiliza para construir interfaces reutilizables, flexibles y desacopladas.
 
 
 
