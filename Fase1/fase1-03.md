@@ -343,7 +343,59 @@ pero el contenido interno queda completamente libre.
 `children` permite pasar interfaz dentro de otros componentes, haciendo posible la composición, que es el mecanismo principal que React utiliza para construir interfaces reutilizables, flexibles y desacopladas.
 
 
+## Componentes puros e impuros
 
+Un **componente puro** es aquel que, dadas las mismas props y el mismo estado, siempre devuelve el mismo resultado visual y no produce efectos secundarios durante el render.
+
+Esto significa que el componente:
+
+* no modifica variables externas,
+* no altera props,
+* no hace fetch,
+* no modifica el DOM manualmente,
+* y no ejecuta side effects mientras renderiza.
+
+React espera que los componentes se comporten de esta manera porque el render debe ser predecible y determinista.
+
+Un **componente impuro**, en cambio, produce efectos secundarios o genera resultados distintos durante el render aunque las entradas sean las mismas. Esto puede provocar comportamientos inesperados, bugs y dificultades durante la reconciliación y el renderizado.
+
+### Ejemplo de componente puro
+
+```tsx
+type WelcomeProps = {
+  name: string
+}
+
+function Welcome({ name }: WelcomeProps) {
+  return <h1>Hello {name}</h1>
+}
+```
+
+Con las mismas props:
+
+```tsx
+<Welcome name="John" />
+```
+
+siempre renderizará exactamente lo mismo.
+
+### Ejemplo de componente impuro
+
+```tsx
+let count = 0
+
+function Counter() {
+  count++
+
+  return <h1>{count}</h1>
+}
+```
+
+Aunque las props no cambien, el resultado visual cambia porque el componente modifica una variable externa durante el render. Esto rompe la pureza del componente.
+
+>En aplicaciones reales los efectos secundarios son inevitables porque eventualmente necesitamos interactuar con el mundo exterior: hacer fetch de datos, usar timers, escuchar eventos, acceder al DOM o comunicarse con APIs externas. El problema no es que existan efectos, sino dónde ocurren.
+>
+>Por eso React busca que el render de los componentes sea lo más puro y predecible posible, aislando los side effects fuera del render mediante `useEffect`. La idea es separar el cálculo de la interfaz de las operaciones externas para que React pueda renderizar, reconciliar y optimizar la UI de forma segura y consistente.
 
 
 
