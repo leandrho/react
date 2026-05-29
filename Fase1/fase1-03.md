@@ -192,7 +192,7 @@ Uso:
 <Button text="Delete" disabled />
 ```
 
-## `children` y composición de componentes
+## <code style="font-weight: normal;">children</code> y composición de componentes
 
 `children` es una prop especial que representa todo el contenido colocado entre la etiqueta de apertura y cierre de un componente.
 
@@ -236,7 +236,7 @@ Card({
 })
 ```
 
-### ¿Qué puede contener `children`?
+### ¿Qué puede contener  <code style="font-weight: normal;">children</code>?
 
 `children` puede contener prácticamente cualquier cosa que React pueda renderizar:
 
@@ -315,7 +315,7 @@ Cada componente:
 * y se combina con otros componentes para formar la UI completa.
 
 
-### `children` como slot dinámico
+###  <code style="font-weight: normal;">children</code> como slot dinámico
 
 Mentalmente, `children` funciona como un espacio dinámico donde el componente padre puede insertar contenido.
 
