@@ -46,7 +46,7 @@
 
 ---
 
-### Estado y eventos
+### Estado
 *El núcleo de la reactividad*
 
 - Hooks: ¿que son?
@@ -57,6 +57,24 @@
 - Inmutabilidad: por qué no mutar el estado directamente
 
 🔗 Ver: Pensamiento React (Core)
+
+---
+
+### Eventos
+*La conexión entre el usuario y la UI.*
+
+- Eventos en profundidad
+   - Synthetic Events
+   - Diferencias con DOM nativo
+   - Wvent bubbling
+   - `preventDefault`
+   - `stopPropagation`
+
+- Event handlers
+   - Pasar funciones
+   - Referencias vs ejecución inmediata
+   - Handlers inline
+   - Handlers reutilizables
 
 ---
 
