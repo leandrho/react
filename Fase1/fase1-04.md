@@ -141,3 +141,51 @@ Cada actualización recibe el estado más reciente.
 
 Las actualizaciones funcionales son recomendadas cuando el *nuevo estado depende del estado anterior*, cuando *hay múltiples actualizaciones consecutivas* o cuando *existe posibilidad de concurrencia/asincronía*.
 
+## Estado vs Variable local: la diferencia clave
+
+Una variable local y el estado (`state`) pueden almacenar datos, pero React los trata de manera completamente diferente.
+
+Una variable local existe solo durante la ejecución actual del componente. Cada vez que el componente se vuelve a renderizar, la función se ejecuta nuevamente y las variables locales se recrean desde cero.
+
+Ejemplo:
+
+```tsx
+function Counter() {
+  let count = 0
+
+  count++
+
+  return <h1>{count}</h1>
+}
+```
+
+En cada render, `count` vuelve a comenzar en `0`.
+
+### El estado persiste entre renders
+
+El estado creado con `useState` sí se conserva entre renderizados porque React lo almacena internamente.
+
+Ejemplo:
+
+```tsx
+function Counter() {
+  const [count, setCount] = useState(0)
+
+  return <h1>{count}</h1>
+}
+```
+
+Aunque el componente vuelva a ejecutarse muchas veces, React mantiene el valor actual de `count`.
+
+### Diferencia fundamental
+
+Cambiar una variable local:
+
+* no persiste entre renders,
+* y no provoca re-renderizados.
+
+Cambiar el estado:
+
+* persiste entre renders,
+* y le indica a React que debe actualizar la interfaz.
+
