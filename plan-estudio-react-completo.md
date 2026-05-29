@@ -49,6 +49,7 @@
 ### Estado y eventos
 *El núcleo de la reactividad*
 
+- Hooks: ¿que son?
 - `useState`: estado local y actualizaciones
 - Actualizaciones funcionales: `prev => ...`
 - Estado vs variable local: la diferencia clave
