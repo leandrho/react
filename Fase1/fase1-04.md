@@ -259,7 +259,7 @@ Los formularios controlados permiten:
 * transformar datos,
 * y manejar formularios complejos de manera predecible.
 
-# Inmutabilidad: por qué no mutar el estado directamente
+## Inmutabilidad: por qué no mutar el estado directamente
 
 En React, el estado debe tratarse como inmutable. Esto significa que no debemos modificar directamente los objetos o arrays almacenados en el estado, sino crear nuevas versiones con los cambios aplicados.
 
