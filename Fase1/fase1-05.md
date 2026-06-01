@@ -56,6 +56,16 @@ React:
 * escucha eventos globalmente,
 * y luego distribuye los handlers correspondientes.
 
+
+En el DOM nativo, normalmente cada elemento registra sus propios listeners mediante `addEventListener`. Por ejemplo, si una página tiene muchos botones con eventos de click, el navegador mantiene un listener asociado a cada uno de esos elementos.
+
+En React, el sistema funciona de forma diferente. React utiliza una técnica llamada **event delegation** (delegación de eventos). En lugar de registrar listeners en cada elemento, React registra unos pocos listeners reales en el contenedor raíz de la aplicación y escucha allí eventos como `click`, `change`, `submit`, entre otros.
+
+Cuando ocurre un evento, el navegador lo genera sobre el elemento correspondiente y este se propaga (bubbling) hasta llegar al contenedor raíz. React intercepta ese evento, crea un **Synthetic Event** y consulta internamente qué componente o elemento JSX tenía asociado el handler correspondiente (`onClick`, `onChange`, etc.).
+
+Finalmente, React ejecuta la función indicada por el desarrollador. De esta forma, React no depende de un listener por cada elemento, sino que centraliza la gestión de eventos, ofrece una API consistente entre navegadores y puede integrar el sistema de eventos con su propio ciclo de renderizado y actualización de la interfaz.
+
+
 ### Diferencias importantes
 #### Nombres camelCase
 
