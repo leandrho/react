@@ -65,6 +65,31 @@ Cuando ocurre un evento, el navegador lo genera sobre el elemento correspondient
 
 Finalmente, React ejecuta la función indicada por el desarrollador. De esta forma, React no depende de un listener por cada elemento, sino que centraliza la gestión de eventos, ofrece una API consistente entre navegadores y puede integrar el sistema de eventos con su propio ciclo de renderizado y actualización de la interfaz.
 
+Conceptualmente el flujo es:
+
+```text
+Usuario hace click
+↓
+El navegador crea un evento nativo
+↓
+El evento atraviesa Capturing → Target → Bubbling en el DOM real
+↓
+React intercepta el evento mediante sus listeners delegados
+↓
+React crea un Synthetic Event
+↓
+React determina qué componentes/elementos React están involucrados
+↓
+React ejecuta los handlers respetando el orden de propagación:
+   - onClickCapture
+   - target
+   - onClick
+``` 
+En resumen:
+
+Cuando se genera un evento en el navegador, este atraviesa tres fases: primero **captura (capturing)**, donde el evento baja desde la raíz del documento hasta el elemento objetivo; luego **target**, donde llega al elemento que originó el evento; y finalmente **propagación (bubbling)**, donde vuelve a subir desde ese elemento hacia sus ancestros. En React, los handlers como `onClick` se ejecutan normalmente durante la fase de bubbling, mientras que `onClickCapture` permite interceptar el evento durante la fase de captura, antes de que llegue al elemento objetivo.
+
+
 
 ### Diferencias importantes
 #### Nombres camelCase
