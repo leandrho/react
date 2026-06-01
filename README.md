@@ -7,3 +7,5 @@ Plan de estudio para React, de iniciantes a avanzado
 * [Fundamentos sólidos](Fase1/fase1-01.md)
 * [JSX a Fondo](Fase1/fase1-02.md)
 * [Componentes](Fase1/fase1-03.md)
+* [Estados](Fase1/fase1-04.md)
+* [Eventos](Fase1/fase1-05.md)
