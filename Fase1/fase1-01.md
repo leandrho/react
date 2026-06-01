@@ -74,8 +74,8 @@ Entonces actualiza únicamente el contenido del texto, no todo el nodo.
 El Virtual DOM NO existe para “hacer magia”.
 
 Existe para abstraer la manipulación manual del DOM,
-optimizar actualizaciones,
-y permitir un modelo declarativo.
+optimizar actualizaciones y permitir un modelo declarativo.
+
 Importante: el Virtual DOM no es automáticamente más rápido
 
 Mucha gente cree:
