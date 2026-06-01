@@ -1,4 +1,5 @@
 # Eventos
+*La conexión entre el usuario y la UI*
 
 Los **eventos** permiten que la interfaz reaccione a las interacciones del usuario o a determinadas acciones del sistema, como clicks, escritura, envíos de formularios o movimientos del mouse. En React, los eventos forman parte del flujo interactivo de la aplicación y normalmente son los que desencadenan cambios de estado y nuevas actualizaciones de la interfaz.
 
