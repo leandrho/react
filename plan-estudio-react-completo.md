@@ -66,7 +66,7 @@
 - Eventos en profundidad
    - Synthetic Events
    - Diferencias con DOM nativo
-   - Wvent bubbling
+   - Event bubbling
    - `preventDefault`
    - `stopPropagation`
 
