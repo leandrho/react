@@ -96,6 +96,18 @@
 
 ---
 
+### Custom Hooks
+*Reutilización real de lógica*
+
+- Reglas de hooks y por qué existen
+- Extraer lógica a un custom hook
+- Hooks para fetching, formularios y local storage
+- Testear hooks con React Testing Library
+
+🔗 Ver: Arquitectura frontend (Core)
+
+---
+
 ### Hooks de optimización
 *Rendimiento consciente*
 
@@ -127,18 +139,6 @@
 
 ### Hooks Avanzados
 - El nuevo hook `use`: Consumir contextos y promesas de forma condicional.
-
----
-
-### Custom Hooks
-*Reutilización real de lógica*
-
-- Reglas de hooks y por qué existen
-- Extraer lógica a un custom hook
-- Hooks para fetching, formularios y local storage
-- Testear hooks con React Testing Library
-
-🔗 Ver: Arquitectura frontend (Core)
 
 ---
 
