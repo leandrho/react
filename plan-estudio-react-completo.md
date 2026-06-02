@@ -90,6 +90,7 @@
 - Cleanup functions y memory leaks
 - Stale closures: qué son y cómo evitarlas
 - Efectos vs eventos: la distinción clave
+- Anatomía del useEffect
 
 🔗 Ver: Pensamiento React (Core)
 
