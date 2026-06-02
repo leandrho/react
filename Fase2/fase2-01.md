@@ -339,6 +339,8 @@ La pregunta clave es:
 
 Si no podés responder esa pregunta, es una señal muy fuerte de que ese `useEffect` probablemente no debería existir.
 
+---
+
 ## Dependency Array
 
 El **dependency array** es el segundo argumento de `useEffect` y le indica a React **cuándo debe volver a ejecutar un efecto**.
@@ -507,4 +509,158 @@ Por eso React recomienda corregir el código antes que desactivar la regla.
 ### En resumen
 
 El dependency array le indica a React cuándo volver a ejecutar un efecto. Como regla general, todos los valores utilizados dentro del efecto y que provienen del componente deben declararse como dependencias. El linter ayuda a detectar omisiones que podrían provocar comportamientos inconsistentes o stale closures.
+
+---
+
+## Cleanup Functions y Memory Leaks
+
+Un efecto no solo puede ejecutar código cuando comienza, sino también limpiar recursos cuando deja de ser necesario. Para eso, `useEffect` puede devolver una función conocida como **cleanup function**.
+
+Ejemplo:
+
+```tsx
+import { useEffect } from "react"
+
+function App() {
+  useEffect(() => {
+    console.log("setup")
+
+    return () => {
+      console.log("cleanup")
+    }
+  }, [])
+
+  return <h1>Hello</h1>
+}
+```
+
+## ¿Cuándo se ejecuta el cleanup?
+
+Hay dos situaciones principales.
+
+### 1. Antes de volver a ejecutar el efecto
+
+```tsx
+useEffect(() => {
+  console.log("effect", userId)
+
+  return () => {
+    console.log("cleanup", userId)
+  }
+}, [userId])
+```
+
+Si `userId` cambia:
+
+```text
+effect(1)
+
+userId cambia
+
+cleanup(1)
+effect(2)
+```
+
+React primero limpia el efecto anterior y luego ejecuta el nuevo.
+
+### 2. Cuando el componente se desmonta
+
+Si el componente desaparece de la interfaz:
+
+```text
+Component mounted
+↓
+Effect
+↓
+Component unmounted
+↓
+Cleanup
+```
+
+React ejecuta el cleanup para liberar recursos.
+
+### ¿Por qué existe el cleanup?
+
+Porque muchos efectos crean recursos externos que deben eliminarse cuando ya no se usan.
+
+Ejemplos:
+
+* listeners,
+* timers,
+* websockets,
+* suscripciones,
+* conexiones,
+* observadores (`IntersectionObserver`, `MutationObserver`, etc.).
+
+### Ejemplo: Event Listener
+
+```tsx
+import { useEffect } from "react"
+
+function App() {
+  useEffect(() => {
+    function handleResize() {
+      console.log(window.innerWidth)
+    }
+
+    window.addEventListener(
+      "resize",
+      handleResize
+    )
+
+    return () => {
+      window.removeEventListener(
+        "resize",
+        handleResize
+      )
+    }
+  }, [])
+
+  return <h1>Hello</h1>
+}
+```
+
+Si no eliminamos el listener, seguirá existiendo aunque el componente desaparezca.
+
+## ¿Qué es un Memory Leak?
+
+Un **memory leak** ocurre cuando recursos que ya no deberían existir continúan ocupando memoria o ejecutándose porque nunca fueron liberados correctamente.
+
+Ejemplos comunes:
+
+```text
+Listener olvidado
+Timer olvidado
+WebSocket abierto
+Suscripción activa
+Observer activo
+```
+
+Aunque el componente ya no exista, esos recursos pueden seguir funcionando.
+
+## ¿Siempre necesito cleanup?
+
+Respuesta corta No.
+
+Por ejemplo:
+
+```tsx
+useEffect(() => {
+  document.title = "Dashboard"
+}, [])
+```
+
+No hay nada que liberar.
+
+## Regla práctica
+
+Preguntate:
+
+> ¿Este efecto crea algo que debe detenerse, desconectarse o eliminarse más adelante?
+
+Si la respuesta es sí, probablemente necesite un cleanup.
+
+### En resumen
+
+El cleanup permite deshacer el trabajo realizado por un efecto. React lo ejecuta antes de re-ejecutar el efecto y cuando el componente se desmonta. Su función principal es evitar recursos huérfanos, comportamientos inesperados y memory leaks.
 
