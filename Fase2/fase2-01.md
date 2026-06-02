@@ -664,3 +664,166 @@ Si la respuesta es sí, probablemente necesite un cleanup.
 
 El cleanup permite deshacer el trabajo realizado por un efecto. React lo ejecuta antes de re-ejecutar el efecto y cuando el componente se desmonta. Su función principal es evitar recursos huérfanos, comportamientos inesperados y memory leaks.
 
+---
+
+## Stale Closures: qué son y cómo evitarlas
+
+Los **stale closures** son uno de los problemas más comunes y difíciles de detectar cuando se empieza a trabajar con `useEffect`.
+
+La idea fundamental es:
+
+> Un efecto "recuerda" los valores que existían en el render donde fue creado.
+
+Si más adelante esos valores cambian pero el efecto no se vuelve a crear, seguirá utilizando los valores antiguos.
+
+### El problema en React
+
+Supongamos:
+
+```tsx
+import { useEffect, useState } from "react"
+
+function App() {
+  const [count, setCount] = useState<number>(0)
+
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      console.log(count)
+    }, 1000)
+
+    return () => {
+      clearInterval(intervalId)
+    }
+  }, [])
+
+  return (
+    <button
+      onClick={() =>
+        setCount(prev => prev + 1)
+      }
+    >
+      {count}
+    </button>
+  )
+}
+```
+
+¿Qué imprime?
+
+Muchos esperan:
+
+```text
+0 1 2 3 ...
+```
+
+Pero en realidad imprime:
+
+```text
+0 0 0 0 ...
+```
+
+### ¿Por qué ocurre?
+
+Porque el efecto se ejecutó una sola vez:
+
+```tsx
+[], // dependency array vacío
+```
+
+Durante ese primer render:
+
+```text
+count = 0
+```
+
+El callback del `setInterval` quedó asociado a ese valor.
+
+Aunque el componente vuelva a renderizar y `count` cambie, el intervalo sigue utilizando la closure original.
+
+
+### ¿Cómo solucionarlo?
+
+### Opción 1: Dependencias correctas
+
+```tsx
+useEffect(() => {
+  const intervalId = setInterval(() => {
+    console.log(count)
+  }, 1000)
+
+  return () => {
+    clearInterval(intervalId)
+  }
+}, [count])
+```
+
+Ahora React:
+
+* limpia el efecto anterior,
+* crea uno nuevo,
+* y la closure recibe el valor actualizado.
+
+### Opción 2: Actualizaciones funcionales
+
+Muchas veces el problema aparece al actualizar estado.
+
+Incorrecto:
+
+```tsx
+setCount(count + 1)
+```
+
+Mejor:
+
+```tsx
+setCount(prev => prev + 1)
+```
+
+Porque no depende del valor capturado por la closure.
+
+### Opción 3: useRef (más adelante)
+
+En algunos casos avanzados se utiliza:
+
+```tsx
+const countRef = useRef(count)
+```
+
+para acceder siempre al valor más reciente sin recrear efectos constantemente.
+
+Lo veremos cuando estudiemos `useRef`.
+
+### ¿Por qué el linter insiste tanto?
+
+Porque la mayoría de los stale closures aparecen cuando faltan dependencias.
+
+Ejemplo:
+
+```tsx
+useEffect(() => {
+  console.log(userId)
+}, [])
+```
+
+El efecto usa:
+
+```tsx
+userId
+```
+
+pero no lo declara como dependencia.
+
+Por eso el linter avisa:
+
+```text
+Missing dependency: userId
+```
+
+Está intentando evitar que el efecto se quede con una versión antigua de esa variable.
+
+### En resumen
+
+Un stale closure ocurre cuando un efecto o callback continúa utilizando valores de un render anterior porque fue creado con una closure antigua. La forma principal de evitarlo es declarar correctamente las dependencias del efecto para que React pueda recrearlo cuando esos valores cambien.
+
+
+
