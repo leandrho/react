@@ -827,7 +827,7 @@ Un stale closure ocurre cuando un efecto o callback continúa utilizando valores
 
 ---
 
-## Anatomia Efectos vs Eventos
+## Efectos vs Eventos: la distinción clave
 
 La diferencia fundamental es:
 
@@ -860,7 +860,8 @@ La pregunta práctica es:
 
 Esta distinción es una de las claves para evitar el uso innecesario de `useEffect` y escribir componentes más simples y predecibles.
 
-## 
+## Anatomía del useEffect
+
 Si el `useState` es el mecanismo para capturar fotografías del estado de tu aplicación, el `useEffect` es el mecanismo de React para **sincronizar esas fotografías con el mundo exterior**.
 
 Muchos desarrolladores cometen el error de pensar en `useEffect` como un sustituto de los ciclos de vida de los componentes de clase (`componentDidMount`, `componentDidUpdate`, `componentWillUnmount`). **Ese modelo mental es incorrecto y peligroso en el React moderno.** Para entender `useEffect` a nivel experto, tenemos que cambiar el chip: `useEffect` no piensa en "momentos del tiempo", piensa en **Sincronización y Dependencias**.
