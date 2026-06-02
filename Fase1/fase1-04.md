@@ -339,6 +339,196 @@ La inmutabilidad en React no solo aplica al objeto o array principal del estado,
 
 Por eso, cuando se actualizan estructuras profundas, normalmente se utilizan spreads (`...`) u otros métodos que crean nuevas copias en cada nivel necesario. Esto permite que React detecte correctamente los cambios mediante comparación de referencias y actualice la interfaz de forma consistente.
 
+## Anatomía completa de un setState
+
+Para entender realmente cómo funciona el estado en React (`useState`), es necesario derribar la ilusión que la biblioteca nos presenta en la superficie. Cuando escribís `const [state, setState] = useState(0)`, parece que estás declarando una variable normal que cambia de valor con el tiempo. **Pero en JavaScript, eso es físicamente imposible.**
+
+Para dominar React tenemos que abrir el motor, mirar los engranajes y entender el flujo desde tres niveles: **JavaScript puro (Contextos de Ejecución), la estructura de datos interna (React Fiber) y el ciclo de vida del renderizado.**
+
+
+## 1. La paradoja de la variable inmutable
+
+Empecemos con el síntoma más común que confunde a los desarrolladores. Analicemos este componente que maneja un contador de likes:
+
+```typescript
+import { useState } from 'react';
+
+function LikeButton() {
+  const [likes, setLikes] = useState<number>(0);
+
+  function handleLike(): void {
+    console.log('1. Valor inicial en el click:', likes); // Imprime 0
+
+    setLikes(likes + 1);
+
+    console.log('2. Valor inmediatamente después:', likes); // ¡Sigue imprimiendo 0!
+  }
+
+  return (
+    <button onClick={handleLike}>
+      Likes: {likes}
+    </button>
+  );
+}
+
+```
+
+Si le das click al botón por primera vez, verás que ambos `console.log` muestran `0`, pero la pantalla mágicamente se actualiza a `1`. ¿Por qué la variable no cambió si acabamos de ejecutar `setLikes`?
+
+### El secreto: `likes` es una constante, no una variable viva
+
+Cuando React renderiza `LikeButton`, ejecuta la función de arriba a abajo. Al desestructurar el array, obtenés una variable local llamada `likes`.
+
+En JavaScript, los números son **valores primitivos** y se pasan por valor, no por referencia. Además, la declarás con `const`. React no tiene superpoderes para alterar las reglas de JavaScript: no puede forzar a una constante local a mutar su valor en la línea siguiente.
+
+Lo que realmente está ocurriendo es que `likes` está atrapado dentro de una **Closure** (clausura). La función `handleLike` captura el entorno léxico del momento exacto en que fue creada. En ese momento (Render #1), `likes` valía `0`. Por lo tanto, para esa ejecución específica de `handleLike`, `likes` será `0` de principio a fin.
+
+## 2. La arquitectura interna: ¿Dónde vive el estado si la función se destruye?
+
+Si las funciones de React se ejecutan de principio a fin y sus variables locales desaparecen de la memoria al terminar, ¿cómo es que React "recuerda" que tus likes iban por el número 5?
+
+La respuesta es **React Fiber**.
+
+Fuera de tus componentes de JavaScript, React mantiene una estructura de datos en memoria llamada el **Árbol Fiber**. Cada componente en tu interfaz tiene un nodo Fiber asignado (un objeto gigante que representa el estado real y persistente del componente).
+
+Cuando llamás a un Hook como `useState`, React busca el nodo Fiber de ese componente. Dentro de ese nodo, hay una propiedad llamada `memoizedState` que almacena una **lista enlazada** (Linked List) con todos los hooks que declaraste, en el orden exacto en que los pusiste.
+
+```
+FiberNode (LikeButton)
+   │
+   └─── memoizedState ───► [ Hook 1 (useState) ] ───► [ Hook 2 (useEffect) ] ───► null
+
+```
+
+Si hacemos un zoom microscópico a la estructura interna de ese objeto `Hook` de la lista enlazada, nos encontramos con esto:
+
+```typescript
+interface Hook {
+  memoizedState: any;       // El valor del estado que se usó en el último render exitoso (ej: 0)
+  baseState: any;           // El estado base para calcular las actualizaciones pendientes
+  queue: UpdateQueue | null;// Una cola circular de cambios que solicitaste pero no se han procesado
+  next: Hook | null;        // Puntero al siguiente hook en el componente
+}
+
+```
+
+### ¿Qué hace realmente `setLikes`?
+
+Cuando ejecutás `setLikes(1)`, no estás modificando el estado. Lo que estás haciendo es despachar un **Update** (un mensaje de actualización) a la cola (`queue`) de ese hook específico dentro de Fiber.
+
+Ese objeto de actualización se ve tipicamente así:
+
+```typescript
+interface Update {
+  action: any;         // El nuevo valor (1) o la función reductora (prev => prev + 1)
+  next: Update | null; // Puntero al siguiente cambio (React agrupa múltiples setStates)
+}
+
+```
+
+Entonces, cuando llamás a `setLikes(likes + 1)`, React crea este objeto de actualización, lo encola en la estructura interna de Fiber, y deja tu variable local `likes` completamente intacta. Tu función termina de ejecutarse, el segundo `console.log` lee el `likes` local (que sigue siendo 0) y el hilo principal de JavaScript queda libre.
+
+
+## 3. El ciclo dinámico: El viaje de Render y Commit
+
+Una vez que tu función manejadora de eventos (`handleLike`) termina de ejecutarse por completo, el Call Stack de JavaScript se vacía. Ahí es cuando React toma el control del escenario para procesar el trabajo pendiente a través de dos fases fundamentales: **Render** y **Commit**.
+
+```
+[Click del Usuario]
+       │
+       ▼
+1. Fase de Evento (JS Puro)
+   - Se ejecuta handleLike()
+   - setLikes() añade la Update a la cola del Hook
+   - handleLike() termina (Call Stack vacío)
+       │
+       ▼
+2. Fase de Render (React - Asíncrona)
+   - React vuelve a ejecutar LikeButton()
+   - useState lee la cola de updates y calcula el nuevo valor
+   - Se genera el nuevo árbol de elementos (Virtual DOM)
+       │
+       ▼
+3. Fase de Commit (React - Síncrona)
+   - React compara el nuevo Virtual DOM con el viejo
+   - Aplica los cambios estrictamente necesarios en el DOM Real del navegador
+
+```
+
+### Detalle de la Fase de Render (El procesamiento de la cola)
+
+React nota que el componente quedó marcado como "sucio" porque tiene actualizaciones pendientes. Entonces, **vuelve a invocar la función `LikeButton()` desde cero**. Es una ejecución completamente nueva e independiente de la anterior.
+
+Cuando la ejecución pasa por la línea del hook:
+
+```typescript
+const [likes, setLikes] = useState<number>(0);
+
+```
+
+React va al nodo Fiber, abre la `queue` del hook, ve que hay una actualización pendiente `{ action: 1 }`, toma el `memoizedState` viejo (`0`), le aplica la acción y calcula que el nuevo estado es `1`.
+
+Luego, guarda de forma permanente ese `1` en el `memoizedState` del Fiber y te lo devuelve en la desestructuración. Ahora, en esta nueva ejecución (Render #2), la constante `likes` vale `1`. Tu componente genera un nuevo bloque de código de interfaz (Virtual DOM): `<button>Likes: 1</button>`.
+
+### Detalle de la Fase de Commit (Pintando la pantalla)
+
+React agarra ese nuevo fragmento de interfaz y lo compara con el que generó en el Render #1 (`<button>Likes: 0</button>`) (*Reconciliation*).
+
+Al notar que la única diferencia es el texto interno del botón, React entra a la fase de **Commit** y modifica de forma síncrona el nodo del DOM del navegador utilizando propiedades nativas ultrarrápidas como `textContent`. Ahora, el usuario finalmente ve el número `1` en su monitor.
+
+## 4. El caso avanzado: Funciones actualizadoras (`prev => prev + 1`)
+
+Para terminar analicemos qué pasa cuando mandamos llamadas consecutivas. Si entendiste lo anterior, podrás deducir por qué este código falla en hacer un incremento triple:
+
+```typescript
+function handleTripleLike(): void {
+  setLikes(likes + 1); // likes es 0 -> encola "quiero que valga 1"
+  setLikes(likes + 1); // likes sigue siendo 0 -> encola "quiero que valga 1"
+  setLikes(likes + 1); // likes sigue siendo 0 -> encola "quiero que valga 1"
+}
+
+```
+
+Al final del evento, la cola del hook tiene tres actualizaciones idénticas: `[1, 1, 1]`. Cuando React corre el Render #2, procesa la cola, pisa los valores uno tras otro y el resultado final es simplemente `1`.
+
+Para solucionar esto, React nos permite pasar una **función actualizadora**:
+
+```typescript
+function handleTripleLikeAnatomia(): void {
+  setLikes(prev => prev + 1);
+  setLikes(prev => prev + 1);
+  setLikes(prev => prev + 1);
+}
+
+```
+
+¿Por qué este sí funciona y sube de `0` a `3` si `likes` sigue congelado en `0` durante todo el bloque?
+
+Porque en la estructura de datos interna del hook de Fiber, la `queue` ahora almacena funciones puras (instrucciones de cálculo) en lugar de valores estáticos:
+
+```typescript
+// La cola interna de actualizaciones en Fiber se ve así:
+queue: [
+  { action: prev => prev + 1 },
+  { action: prev => prev + 1 },
+  { action: prev => prev + 1 }
+]
+
+```
+
+Cuando el evento termina y React inicia la **Fase de Render**, entra al hook y ejecuta un proceso idéntico a un `.reduce()` de JavaScript sobre esa cola, usando el último estado guardado (`0`) como valor inicial:
+
+1. Agarra el estado base `0`, lo pasa a la primera función: $0 + 1 = \mathbf{1}$.
+2. Agarra ese resultado acumulado `1`, lo pasa a la segunda función: $1 + 1 = \mathbf{2}$.
+3. Agarra ese resultado acumulado `2`, lo pasa a la tercera función: $2 + 1 = \mathbf{3}$.
+
+Guarda el `3` final en el nodo Fiber y arranca el renderizado devolviéndote un `3` limpio.
+
+### Resumen para llevar en la cabeza
+
+Nunca pienses que `setState` busca tu variable y la modifica en el acto. El modelo mental correcto es:
+
+> **`useState` te da una fotografía instantánea del estado fija para el render actual. Cuando usás el modificador (`setLikes`), no cambiás el presente; estás firmando un formulario de solicitud para que React planifique un render en el futuro con un dato completamente nuevo.**
 
 
 

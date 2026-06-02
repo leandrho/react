@@ -55,6 +55,7 @@
 - Estado vs variable local: la diferencia clave
 - Manejo de formularios controlados
 - Inmutabilidad: por qué no mutar el estado directamente
+- Anatomía completa de un setState
 
 🔗 Ver: Pensamiento React (Core)
 
