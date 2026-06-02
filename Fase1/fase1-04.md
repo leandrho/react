@@ -383,6 +383,8 @@ En JavaScript, los números son **valores primitivos** y se pasan por valor, no 
 
 Lo que realmente está ocurriendo es que `likes` está atrapado dentro de una **Closure** (clausura). La función `handleLike` captura el entorno léxico del momento exacto en que fue creada. En ese momento (Render #1), `likes` valía `0`. Por lo tanto, para esa ejecución específica de `handleLike`, `likes` será `0` de principio a fin.
 
+>Una **clausura(Closure)** es la combinación de una función y el entorno léxico (el ámbito/scope) dentro del cual fue creada. En la práctica, esto significa que una función interna siempre va a recordar y tener acceso a las variables de su función externa, incluso después de que la función externa haya terminado de ejecutarse y su contexto haya desaparecido de la pila de ejecución (Call Stack).
+
 ## 2. La arquitectura interna: ¿Dónde vive el estado si la función se destruye?
 
 Si las funciones de React se ejecutan de principio a fin y sus variables locales desaparecen de la memoria al terminar, ¿cómo es que React "recuerda" que tus likes iban por el número 5?
