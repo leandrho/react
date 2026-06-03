@@ -380,3 +380,496 @@ Así el callback puede leer siempre el valor actualizado sin recrear el efecto.
 ### En resumen
 
 `useRef` permite almacenar valores mutables que persisten entre renderizados sin provocar nuevos renders. Puede utilizarse para acceder a elementos del DOM, guardar referencias a recursos externos o conservar información interna del componente que no forma parte de la interfaz. Si un cambio debe reflejarse en la UI, debe utilizarse estado (`useState`); si no necesita renderizar, un ref suele ser la herramienta adecuada.
+
+---
+
+## `useMemo`: memoizar cálculos costosos
+
+`useMemo` es un Hook que permite **memorizar (cachear) el resultado de un cálculo entre renderizados** para evitar volver a ejecutarlo cuando sus dependencias no cambiaron.
+
+Su sintaxis es:
+
+```tsx
+const value = useMemo(() => {
+  return expensiveCalculation(data)
+}, [data])
+```
+
+La idea es simple:
+
+```text
+Primer render
+↓
+Ejecuta el cálculo
+↓
+Guarda el resultado
+
+Render siguiente
+↓
+Las dependencias no cambiaron
+↓
+Reutiliza el resultado anterior
+```
+
+### El problema que intenta resolver
+
+Recordemos que cada render vuelve a ejecutar la función del componente:
+
+```tsx
+function App() {
+  const result =
+    expensiveCalculation()
+
+  return <div>{result}</div>
+}
+```
+
+Si el componente renderiza diez veces:
+
+```text
+Render #1 → cálculo
+Render #2 → cálculo
+Render #3 → cálculo
+...
+```
+
+el cálculo se ejecuta en cada render aunque el resultado sea siempre el mismo.
+
+# Ejemplo básico
+
+Sin `useMemo`:
+
+```tsx
+function ProductList({ products }: { products: Product[]}) {
+  const sortedProducts =
+    [...products].sort(
+      (a, b) => a.price - b.price
+    )
+
+  return ...
+}
+```
+
+Cada render vuelve a ordenar la lista.
+
+Con `useMemo`:
+
+```tsx
+import { useMemo } from "react"
+
+function ProductList({ products }: { products: Product[] }) {
+  const sortedProducts =
+    useMemo(() => {
+      return [...products].sort(
+        (a, b) => a.price - b.price
+      )
+    }, [products])
+
+  return ...
+}
+```
+
+Ahora el ordenamiento solo ocurre cuando cambia `products`.
+
+### Cómo funciona internamente
+
+Conceptualmente React hace algo parecido a:
+
+```text
+Render #1
+↓
+Ejecuta callback
+↓
+Guarda resultado
+↓
+Guarda dependencias
+
+Render #2
+↓
+Compara dependencias
+↓
+No cambiaron
+↓
+Devuelve resultado guardado
+```
+
+Si alguna dependencia cambia:
+
+```text
+Render #3
+↓
+Dependencia cambió
+↓
+Ejecuta callback nuevamente
+↓
+Actualiza cache
+```
+
+### useMemo NO evita renders
+
+Este es uno de los errores más comunes.
+
+Mucha gente piensa:
+
+```tsx
+useMemo(...)
+```
+
+↓
+
+```text
+"Mi componente ya no renderiza"
+```
+
+Eso es falso.
+
+El componente sigue renderizando normalmente.
+
+Lo único que evita `useMemo` es volver a ejecutar un cálculo específico.
+
+```text
+Render
+↓
+Componente ejecutado
+↓
+useMemo reutiliza resultado
+```
+
+### ¿Qué debería ir dentro de useMemo?
+
+Principalmente cálculos costosos.
+
+Por ejemplo:
+
+* filtros grandes,
+* ordenamientos,
+* agrupaciones,
+* transformaciones complejas,
+* cálculos matemáticos pesados.
+
+Ejemplo:
+
+```tsx
+const filteredUsers =
+  useMemo(() => {
+    return users.filter(...)
+  }, [users])
+```
+
+---
+
+Ejemplo innecesario:
+
+```tsx
+const isAdmin = useMemo(() => {
+  return role === "admin"
+}, [role])
+```
+
+Más simple:
+
+```tsx
+const isAdmin =
+  role === "admin"
+```
+
+### useMemo también memoiza referencias
+
+Además de cálculos costosos, puede utilizarse para mantener estable una referencia.
+
+Sin memoización:
+
+```tsx
+const options = {
+  sortBy: "name"
+}
+```
+
+Cada render crea un objeto nuevo.
+
+Con memoización:
+
+```tsx
+const options = useMemo(() => {
+  return {
+    sortBy: "name"
+  }
+}, [])
+```
+
+La referencia permanece estable.
+
+Esto suele aparecer combinado con:
+
+* `React.memo`
+* `useEffect`
+* `useCallback`
+
+aunque veremos esos casos más adelante.
+
+### El costo de useMemo
+
+`useMemo` no es gratuito.
+
+React debe:
+
+```text
+Guardar dependencias
+Compararlas
+Mantener una cache
+Gestionar memoria
+```
+
+Por eso:
+
+> Memoizar algo barato puede costar más que recalcularlo.
+
+---
+
+# Regla práctica
+
+Antes de usar `useMemo`, preguntate:
+
+1. ¿El cálculo es realmente costoso?
+2. ¿Se ejecuta frecuentemente?
+3. ¿Existe un problema de rendimiento medible?
+
+Si alguna respuesta es "no", probablemente no necesites `useMemo`.
+
+Pensá en `useMemo` como una cache:
+
+
+### En resumen
+
+`useMemo` permite memorizar el resultado de un cálculo entre renderizados y volver a ejecutarlo únicamente cuando cambian sus dependencias. Su objetivo principal es evitar trabajo computacional innecesario en cálculos costosos o mantener referencias estables cuando realmente se necesita. No evita renderizados y no debe utilizarse de forma preventiva o indiscriminada.
+
+---
+
+## `useCallback`: referencias estables de funciones
+
+`useCallback` es un Hook que permite **memorizar una función entre renderizados**, devolviendo la misma referencia mientras sus dependencias no cambien.
+
+Su sintaxis es:
+
+```tsx
+const handleClick = useCallback(() => {
+  console.log("click")
+}, [])
+```
+
+Conceptualmente funciona de manera muy similar a `useMemo`:
+
+```text
+Primer render
+↓
+React guarda la función
+
+Render siguiente
+↓
+Dependencias iguales
+↓
+React devuelve la misma función
+
+Render siguiente
+↓
+Dependencias cambiaron
+↓
+React crea una nueva función
+```
+
+### El problema que intenta resolver
+
+Recordemos que cada render ejecuta nuevamente la función del componente.
+
+Por lo tanto:
+
+```tsx
+function App() {
+  const handleClick = () => {
+    console.log("click")
+  }
+
+  return null
+}
+```
+
+En cada render se crea una función nueva.
+
+```text
+Render #1
+↓
+handleClick → referencia A
+
+Render #2
+↓
+handleClick → referencia B
+
+Render #3
+↓
+handleClick → referencia C
+```
+
+Aunque el código sea idéntico, las referencias son distintas.
+
+### ¿Eso es un problema?
+
+Normalmente No. La enorme mayoría de las funciones creadas durante un render no generan ningún inconveniente.
+
+Por eso es importante entender:
+
+> Crear funciones nuevas en React es completamente normal.
+
+
+### Entonces, ¿para qué existe useCallback?
+
+Principalmente para mantener una referencia estable cuando esa referencia es utilizada por otra optimización.
+
+Por ejemplo:
+
+```tsx
+const handleClick = useCallback(() => {
+  ...
+}, [])
+```
+
+permite que React reutilice la misma función entre renders.
+
+### Comparación con useMemo
+
+Muchos desarrolladores los confunden.
+
+```tsx
+const value = useMemo(() => {
+  return expensiveCalculation()
+}, [])
+```
+
+Memoiza:
+
+```text
+El resultado de un cálculo
+```
+
+---
+
+```tsx
+const handleClick = useCallback(() => {
+  ...
+}, [])
+```
+
+Memoiza:
+
+```text
+La referencia de una función
+```
+
+De hecho, conceptualmente:
+
+```tsx 
+useCallback(fn, deps)
+```
+
+es muy parecido a:
+
+```tsx 
+useMemo(() => fn, deps)
+```
+
+### Caso real: Dependencias de efectos
+
+Supongamos:
+
+```tsx
+function App() {
+  const fetchUsers = () => {
+    ...
+  }
+
+  useEffect(() => {
+    fetchUsers()
+  }, [fetchUsers])
+}
+```
+
+Problema:
+
+```text
+Render
+↓
+Nueva función
+↓
+Dependencia cambió
+↓
+Effect se ejecuta otra vez
+```
+
+En algunos escenarios se utiliza:
+
+```tsx
+const fetchUsers =
+  useCallback(() => {
+    ...
+  }, [])
+```
+
+para estabilizar la referencia.
+
+Aunque muchas veces la mejor solución es reestructurar el efecto.
+
+### useCallback NO evita renders
+
+Este es probablemente el error más frecuente.
+
+Mucha gente piensa:
+
+```tsx
+const handleClick =
+  useCallback(...)
+```
+
+↓
+
+```text
+"Ahora mi componente ya no renderiza"
+```
+
+Eso es falso.
+
+El componente sigue renderizando normalmente.
+
+Lo único que React reutiliza es la referencia de la función.
+
+```text
+Render
+↓
+Componente ejecutado
+↓
+useCallback devuelve función guardada
+```
+
+### El costo de useCallback
+
+Al igual que `useMemo`, no es gratuito.
+
+React debe:
+
+```text
+Guardar dependencias
+Compararlas
+Mantener referencias
+```
+
+Por eso:
+
+> Usar useCallback en todas las funciones suele empeorar la legibilidad sin aportar beneficios reales.
+
+
+### Cuándo suele ser útil
+
+Generalmente aparece junto a `React.memo`, `useEffect`, `Custom Hooks` donde la estabilidad de referencias sí puede influir en el comportamiento o el rendimiento.
+
+### En resumen
+
+`useCallback` permite memorizar funciones entre renderizados para conservar la misma referencia mientras sus dependencias no cambien. Su utilidad principal aparece cuando otras optimizaciones o efectos dependen de la identidad de esa función. No evita renderizados y no debería utilizarse de forma preventiva en todas las funciones de un componente.
+
