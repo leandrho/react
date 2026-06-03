@@ -823,3 +823,7 @@ Si la respuesta es sí, probablemente sea un buen candidato para convertirse en 
 ### En resumen
 
 Los Custom Hooks permiten encapsular patrones repetitivos como fetching, formularios o persistencia en `localStorage`. El objetivo no es ocultar Hooks, sino agrupar una responsabilidad específica detrás de una API simple y reutilizable, permitiendo que los componentes se concentren únicamente en describir la interfaz.
+
+---
+
+## Testear hooks con React Testing Library
