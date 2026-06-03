@@ -305,3 +305,243 @@ El linter existe precisamente para garantizar que React siempre encuentre los Ho
 
 Las reglas de los Hooks existen porque React identifica cada Hook por el orden en que aparece durante el render, no por su nombre. Para que React pueda asociar correctamente el estado, los efectos y las referencias entre renderizados, los Hooks deben ejecutarse siempre en el mismo orden y únicamente dentro de Function Components o Custom Hooks.
 
+---
+
+## Extraer lógica a un Custom Hook
+
+La principal razón para crear un Custom Hook es **reutilizar lógica con estado sin duplicar código**.
+
+A medida que una aplicación crece, es común encontrar varios componentes que contienen la misma combinación de:
+
+* `useState`,
+* `useEffect`,
+* event handlers,
+* transformaciones de datos.
+
+Cuando eso ocurre, suele ser una señal de que esa lógica puede extraerse a un Custom Hook.
+
+### Antes: lógica duplicada
+
+Supongamos que varios componentes necesitan cargar un usuario.
+
+```tsx
+import { useEffect, useState } from "react"
+
+type User = {
+  id: number
+  name: string
+}
+
+function UserProfile({
+  userId
+}: {
+  userId: number
+}) {
+  const [user, setUser] =
+    useState<User | null>(null)
+
+  const [loading, setLoading] =
+    useState(true)
+
+  useEffect(() => {
+    async function loadUser() {
+      setLoading(true)
+
+      const response = await fetch(
+        `/api/users/${userId}`
+      )
+
+      const data: User =
+        await response.json()
+
+      setUser(data)
+      setLoading(false)
+    }
+
+    loadUser()
+  }, [userId])
+
+  return ...
+}
+```
+
+Y luego aparece otro componente con exactamente la misma lógica.
+
+```tsx
+function UserCard({
+  userId
+}: {
+  userId: number
+}) {
+  const [user, setUser] =
+    useState<User | null>(null)
+
+  const [loading, setLoading] =
+    useState(true)
+
+  useEffect(() => {
+    ...
+  }, [userId])
+
+  return ...
+}
+```
+
+La lógica está duplicada.
+
+### Después: lógica reutilizable
+
+Extraemos todo a un Hook:
+
+```tsx
+import {
+  useEffect,
+  useState
+} from "react"
+
+type User = {
+  id: number
+  name: string
+}
+
+function useUser(userId: number) {
+  const [user, setUser] =
+    useState<User | null>(null)
+
+  const [loading, setLoading] =
+    useState(true)
+
+  useEffect(() => {
+    async function loadUser() {
+      setLoading(true)
+
+      const response = await fetch(
+        `/api/users/${userId}`
+      )
+
+      const data: User =
+        await response.json()
+
+      setUser(data)
+      setLoading(false)
+    }
+
+    loadUser()
+  }, [userId])
+
+  return {
+    user,
+    loading
+  }
+}
+```
+
+Ahora los componentes son mucho más simples.
+
+```tsx
+function UserProfile({
+  userId
+}: {
+  userId: number
+}) {
+  const { user, loading } =
+    useUser(userId)
+
+  return ...
+}
+```
+
+```tsx
+function UserCard({
+  userId
+}: {
+  userId: number
+}) {
+  const { user, loading } =
+    useUser(userId)
+
+  return ...
+}
+```
+### Qué debe extraerse
+
+Una buena candidata para convertirse en Custom Hook suele cumplir alguna de estas condiciones:
+
+#### La lógica se repite
+
+```tsx
+useState(...)
+useEffect(...)
+useEffect(...)
+```
+
+aparecen en varios componentes.
+
+#### La lógica es compleja
+
+Aunque se use una sola vez.
+
+```tsx
+function ProductPage() {
+  // 200 líneas de estado y efectos
+}
+```
+
+Extraer partes a Hooks suele mejorar la legibilidad.
+
+#### Existe una responsabilidad clara
+
+Por ejemplo:
+
+```text
+Gestión de usuarios
+Gestión de formularios
+Persistencia en localStorage
+Autenticación
+Scroll
+Geolocalización
+```
+
+Cada responsabilidad puede encapsularse en un Hook.
+
+
+### Qué NO debe extraerse
+
+No todo merece un Custom Hook.
+
+Por ejemplo:
+
+```tsx
+const fullName =
+  `${firstName} ${lastName}`
+```
+
+o
+
+```tsx
+const isAdmin =
+  role === "admin"
+```
+
+son cálculos simples que probablemente no justifican una abstracción.
+
+### Un Custom Hook es una API
+
+Cuando alguien utiliza:
+
+```tsx
+const {
+  user,
+  loading
+} = useUser(userId)
+```
+
+No necesita saber qué estados existen, qué efectos hay, cómo funciona el fetch.
+
+Solo necesita conocer la interfaz pública del Hook.
+
+Por eso un buen Custom Hook oculta los detalles internos y expone únicamente lo necesario.
+
+### En resumen
+
+Extraer lógica a un Custom Hook permite reutilizar comportamiento basado en Hooks sin duplicar código. Un buen Custom Hook encapsula una responsabilidad específica, oculta los detalles de implementación y expone una API simple que los componentes pueden consumir para enfocarse únicamente en la interfaz.
