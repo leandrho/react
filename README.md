@@ -9,3 +9,7 @@ Plan de estudio para React, de iniciantes a avanzado
 * [Componentes](Fase1/fase1-03.md)
 * [Estados](Fase1/fase1-04.md)
 * [Eventos](Fase1/fase1-05.md)
+
+## Fase 2
+* [useEffect en profundidad](Fase2/fase2-01.md)
+* [Custom Hooks](Fase2/fase2-02.md)
