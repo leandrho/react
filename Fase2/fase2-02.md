@@ -545,3 +545,281 @@ Por eso un buen Custom Hook oculta los detalles internos y expone únicamente lo
 ### En resumen
 
 Extraer lógica a un Custom Hook permite reutilizar comportamiento basado en Hooks sin duplicar código. Un buen Custom Hook encapsula una responsabilidad específica, oculta los detalles de implementación y expone una API simple que los componentes pueden consumir para enfocarse únicamente en la interfaz.
+
+---
+
+## Custom Hooks para Fetching, Formularios y Local Storage
+
+Hasta ahora vimos qué son los Custom Hooks y cómo extraer lógica. El siguiente paso es identificar patrones que aparecen constantemente en aplicaciones React y encapsularlos en Hooks reutilizables.
+
+Los tres ejemplos más clásicos son:
+
+```text
+Fetching de datos
+Formularios
+Persistencia en localStorage
+```
+
+porque combinan varios conceptos que ya conocemos:
+
+* estado (`useState`),
+* efectos (`useEffect`),
+* eventos,
+* sincronización con sistemas externos.
+
+### Hook para Fetching
+
+Un patrón muy común es repetir:
+
+```tsx
+const [data, setData] = useState(...)
+const [loading, setLoading] = useState(...)
+const [error, setError] = useState(...)
+
+useEffect(...)
+```
+
+en múltiples componentes.
+
+Podemos encapsularlo:
+
+```tsx
+import {
+  useEffect,
+  useState
+} from "react"
+
+function useFetch<T>(url: string) {
+  const [data, setData] =
+    useState<T | null>(null)
+
+  const [loading, setLoading] =
+    useState(true)
+
+  const [error, setError] =
+    useState<string | null>(null)
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        setLoading(true)
+
+        const response =
+          await fetch(url)
+
+        const result =
+          (await response.json()) as T
+
+        setData(result)
+      } catch {
+        setError("Error al cargar")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [url])
+
+  return {
+    data,
+    loading,
+    error
+  }
+}
+```
+
+Uso:
+
+```tsx
+type User = {
+  id: number
+  name: string
+}
+
+function UserList() {
+  const {
+    data,
+    loading,
+    error
+  } = useFetch<User[]>("/api/users")
+
+  ...
+}
+```
+
+### Hook para Formularios
+
+Otro patrón muy repetido:
+
+```tsx
+const [values, setValues] =
+  useState(...)
+```
+
+más handlers para actualizar campos.
+
+Podemos abstraerlo:
+
+```tsx
+import { useState } from "react"
+
+function useForm<T>(
+  initialValues: T
+) {
+  const [values, setValues] =
+    useState(initialValues)
+
+  function handleChange(
+    name: keyof T,
+    value: string
+  ) {
+    setValues(prev => ({
+      ...prev,
+      [name]: value
+    }))
+  }
+
+  function reset() {
+    setValues(initialValues)
+  }
+
+  return {
+    values,
+    handleChange,
+    reset
+  }
+}
+```
+
+Uso:
+
+```tsx
+type LoginForm = {
+  email: string
+  password: string
+}
+
+function Login() {
+  const {
+    values,
+    handleChange,
+    reset
+  } = useForm<LoginForm>({
+    email: "",
+    password: ""
+  })
+
+  ...
+}
+```
+
+### Hook para Local Storage
+
+Otro caso clásico de sincronización con una API externa del navegador.
+
+Sin Hook:
+
+```tsx
+localStorage.getItem(...)
+localStorage.setItem(...)
+```
+
+termina apareciendo en muchos lugares.
+
+Podemos encapsularlo:
+
+```tsx
+import {
+  useEffect,
+  useState
+} from "react"
+
+function useLocalStorage<T>(
+  key: string,
+  initialValue: T
+) {
+  const [value, setValue] =
+    useState<T>(() => {
+      const stored =
+        localStorage.getItem(key)
+
+      return stored
+        ? JSON.parse(stored)
+        : initialValue
+    })
+
+  useEffect(() => {
+    localStorage.setItem(
+      key,
+      JSON.stringify(value)
+    )
+  }, [key, value])
+
+  return [value, setValue] as const
+}
+```
+
+Uso:
+
+```tsx
+function Settings() {
+  const [theme, setTheme] =
+    useLocalStorage(
+      "theme",
+      "light"
+    )
+
+  ...
+}
+```
+
+### ¿Qué tienen en común estos Hooks?
+
+Todos encapsulan una responsabilidad concreta:
+
+```text
+useFetch
+↓
+Obtención de datos
+
+useForm
+↓
+Gestión de formularios
+
+useLocalStorage
+↓
+Persistencia de datos
+```
+
+Y todos esconden detalles internos:
+
+```text
+useState
+useEffect
+handlers
+serialización
+errores
+```
+
+para exponer una API mucho más simple al componente.
+
+### Regla práctica
+
+Cuando veas que varios componentes repiten la misma combinación de:
+
+```text
+useState
+useEffect
+event handlers
+```
+
+preguntate:
+
+> ¿Esto representa una responsabilidad reutilizable?
+
+Si la respuesta es sí, probablemente sea un buen candidato para convertirse en un Custom Hook.
+
+### En resumen
+
+Los Custom Hooks permiten encapsular patrones repetitivos como fetching, formularios o persistencia en `localStorage`. El objetivo no es ocultar Hooks, sino agrupar una responsabilidad específica detrás de una API simple y reutilizable, permitiendo que los componentes se concentren únicamente en describir la interfaz.
