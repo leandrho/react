@@ -873,3 +873,343 @@ Generalmente aparece junto a `React.memo`, `useEffect`, `Custom Hooks` donde la 
 
 `useCallback` permite memorizar funciones entre renderizados para conservar la misma referencia mientras sus dependencias no cambien. Su utilidad principal aparece cuando otras optimizaciones o efectos dependen de la identidad de esa función. No evita renderizados y no debería utilizarse de forma preventiva en todas las funciones de un componente.
 
+---
+
+## `React.memo`: evitar re-renderizados innecesarios
+
+`React.memo` es una función de orden superior (*Higher-Order Component*) que permite a React **reutilizar el resultado de un componente cuando sus props no cambiaron**.
+
+Su sintaxis es:
+
+```tsx
+import { memo } from "react"
+
+type ButtonProps = {
+  label: string
+}
+
+const Button = memo(
+  function Button({
+    label
+  }: ButtonProps) {
+    console.log("Button render")
+
+    return <button>{label}</button>
+  }
+)
+```
+
+### El problema que intenta resolver
+
+Recordemos que cuando un componente se renderiza, React también renderiza a sus hijos.
+
+Ejemplo:
+
+```tsx
+function App() {
+  const [count, setCount] =
+    useState(0)
+
+  return (
+    <>
+      <Child />
+
+      <button
+        onClick={() =>
+          setCount(prev => prev + 1)
+        }
+      >
+        {count}
+      </button>
+    </>
+  )
+}
+```
+
+```tsx
+function Child() {
+  console.log("Child render")
+
+  return <h1>Child</h1>
+}
+```
+
+Al cambiar `count`:
+
+```text
+App render
+↓
+Child render
+```
+
+aunque `Child` no use `count`.
+
+### ¿Es un problema?
+
+Normalmente No. React está diseñado para que los re-renderizados sean baratos.
+
+La mayoría de los componentes pueden renderizar cientos o miles de veces sin inconvenientes.
+
+### ¿Qué hace React.memo?
+
+`React.memo` le dice a React:
+
+> Si las props son iguales a las del render anterior, reutilizá el resultado anterior y no vuelvas a ejecutar el componente.
+
+```tsx
+const Child = memo(
+  function Child() {
+    console.log("Child render")
+
+    return <h1>Child</h1>
+  }
+)
+```
+
+Ahora:
+
+```text
+App render
+↓
+Props de Child iguales
+↓
+React reutiliza resultado anterior
+↓
+Child no renderiza
+```
+
+### Cómo decide React si las props cambiaron
+
+Por defecto React realiza una comparación superficial (*shallow comparison*).
+
+Ejemplo:
+
+```tsx
+<Profile
+  name="John"
+  age={30}
+/>
+```
+
+Comparación conceptual:
+
+```text
+name viejo === name nuevo
+age viejo === age nuevo
+```
+
+Si todas las props son iguales:
+
+```text
+React reutiliza el render anterior
+```
+
+### El problema de las referencias
+
+Veamos:
+
+```tsx 
+const Child = memo(
+  function Child({ onClick }: { onClick: () => void }) {
+
+    console.log("Child render")
+
+    return (
+      <button onClick={onClick}>
+        Click
+      </button>
+    )
+  }
+)
+```
+
+Padre:
+
+```tsx
+function App() {
+  const [count, setCount] =  useState(0)
+
+  const handleClick = () => {
+    console.log("clicked")
+  }
+
+  return (
+    <>
+      <Child
+        onClick={handleClick}
+      />
+
+      <button
+        onClick={() =>
+          setCount(prev => prev + 1)
+        }
+      >
+        {count}
+      </button>
+    </>
+  )
+}
+```
+
+Cada render crea:
+
+```text
+Nueva función
+↓
+Nueva referencia
+↓
+Prop distinta
+↓
+React.memo falla
+↓
+Child renderiza
+```
+
+Por eso suele combinarse con:
+
+```tsx
+const handleClick =
+  useCallback(() => {
+    console.log("clicked")
+  }, [])
+```
+
+Ahora la referencia permanece estable.
+
+### useMemo y React.memo
+
+Otro caso frecuente:
+
+```tsx
+const options = {
+  sortBy: "name"
+}
+```
+
+Cada render crea:
+
+```text
+Nuevo objeto
+↓
+Nueva referencia
+↓
+Prop distinta
+↓
+React.memo falla
+```
+
+Muchas veces se utiliza:
+
+```tsx id="r2f32h"
+const options = useMemo(() => {
+  return {
+    sortBy: "name"
+  }
+}, [])
+```
+
+para estabilizar la referencia.
+
+### React.memo NO impide todos los renders
+
+Si el componente tiene estado propio:
+
+```tsx
+const Counter = memo(
+  function Counter() {
+    const [count, setCount] = useState(0)
+
+    ...
+  }
+)
+```
+
+y ese estado cambia:
+
+```text
+Estado cambia
+↓
+Counter renderiza
+```
+
+`React.memo` solo compara props.
+
+No bloquea:
+
+* cambios de estado,
+* cambios de contexto,
+* renders provocados por el propio componente.
+
+### Comparación personalizada
+
+Opcionalmente puede pasarse una función de comparación:
+
+```tsx
+const UserCard = memo(
+  UserCardComponent,
+  (prevProps, nextProps) => {
+    return (
+      prevProps.id === nextProps.id
+    )
+  }
+)
+```
+
+Sin embargo, esto es relativamente avanzado y suele utilizarse poco.
+
+### El costo de React.memo
+
+`React.memo` tampoco es gratuito.
+
+React debe Guardar props anteriores, Comparar props, Decidir si renderizar
+
+Por eso:
+
+> Si el componente es pequeño y barato de renderizar, React.memo puede aportar más complejidad que beneficios.
+
+### Cuándo suele ser útil
+
+Generalmente cuando se cumplen dos condiciones:
+
+#### El componente renderiza frecuentemente
+
+```text
+Tablas
+Listas grandes
+Gráficos
+Dashboards
+```
+
+#### El render es costoso
+
+```text
+Muchos elementos
+Muchos cálculos
+Jerarquías profundas
+```
+
+### Relación entre useCallback, useMemo y React.memo
+
+Estos tres conceptos suelen trabajar juntos:
+
+```text
+React.memo
+↓
+Evita renderizar un componente
+
+useCallback
+↓
+Mantiene estables funciones
+
+useMemo
+↓
+Mantiene estables valores y objetos
+```
+
+Por separado muchas veces no aportan nada.
+
+Juntos pueden evitar renders innecesarios cuando realmente existe un problema de rendimiento.
+
+### En resumen
+
+`React.memo` permite que React reutilice el resultado de un componente cuando sus props no cambiaron. Su objetivo es evitar renderizados innecesarios en componentes costosos o que reciben las mismas props con frecuencia. Funciona mediante una comparación superficial de props y suele combinarse con `useCallback` y `useMemo` para mantener estables las referencias que participan en esa comparación.
