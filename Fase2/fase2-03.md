@@ -417,8 +417,7 @@ Recordemos que cada render vuelve a ejecutar la función del componente:
 
 ```tsx
 function App() {
-  const result =
-    expensiveCalculation()
+  const result = expensiveCalculation()
 
   return <div>{result}</div>
 }
@@ -435,7 +434,7 @@ Render #3 → cálculo
 
 el cálculo se ejecuta en cada render aunque el resultado sea siempre el mismo.
 
-# Ejemplo básico
+### Ejemplo básico
 
 Sin `useMemo`:
 
