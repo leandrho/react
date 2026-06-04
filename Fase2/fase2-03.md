@@ -1885,3 +1885,271 @@ Por eso hoy se considera importante conocerlo porque existe muchísimo código q
 
 `forwardRef` permite reenviar una referencia recibida por un componente hacia uno de sus elementos internos. Su principal utilidad es exponer elementos del DOM encapsulados dentro de componentes reutilizables, permitiendo operaciones como foco, medición o integración con librerías externas. En React 19 su importancia disminuye porque `ref` puede recibirse como una prop común, pero sigue siendo fundamental para comprender gran parte del ecosistema existente.
 
+---
+
+## `useImperativeHandle`: controlar qué expone un `ref`
+
+`useImperativeHandle` permite personalizar el valor que un componente expone a través de un `ref`.
+
+Normalmente, cuando un `ref` apunta a un elemento DOM:
+
+```tsx
+const inputRef = useRef<HTMLInputElement>(null)
+```
+
+el padre obtiene acceso al elemento completo:
+
+```tsx
+inputRef.current?.focus()
+inputRef.current?.blur()
+inputRef.current?.select()
+```
+
+Es decir:
+
+```text
+Padre
+↓
+Elemento DOM completo
+```
+
+A veces eso está bien.
+
+Pero otras veces queremos exponer solamente una pequeña API pública y ocultar los detalles internos del componente.
+
+Ahí aparece `useImperativeHandle`.
+
+
+### El problema
+
+Supongamos un componente:
+
+```tsx
+function Modal() {
+  ...
+}
+```
+
+Internamente puede tener:
+
+```tsx
+useState(...)
+useEffect(...)
+refs
+handlers
+```
+
+Todo eso debería ser privado.
+
+El componente padre quizás solo necesita:
+
+```tsx
+modalRef.current?.open()
+modalRef.current?.close()
+```
+
+No debería conocer cómo está implementado el modal.
+
+### La solución
+
+`useImperativeHandle` permite definir exactamente qué recibe el padre.
+
+Conceptualmente:
+
+```tsx
+useImperativeHandle(ref, () => ({
+  open() {
+    ...
+  },
+
+  close() {
+    ...
+  }
+}))
+```
+
+El objeto retornado se convierte en el valor de:
+
+```tsx
+ref.current
+```
+
+### Ejemplo
+
+```tsx
+import {
+  useImperativeHandle,
+  useRef,
+  useState
+} from "react"
+
+type ModalHandle = {
+  open: () => void
+  close: () => void
+}
+
+type ModalProps = {
+  ref?: React.Ref<ModalHandle>
+}
+
+function Modal({
+  ref
+}: ModalProps) {
+  const [isOpen, setIsOpen] =
+    useState(false)
+
+  useImperativeHandle(ref, () => ({
+    open() {
+      setIsOpen(true)
+    },
+
+    close() {
+      setIsOpen(false)
+    }
+  }))
+
+  return (
+    isOpen && <div>Modal</div>
+  )
+}
+```
+
+Uso:
+
+```tsx
+function App() {
+  const modalRef =
+    useRef<ModalHandle>(null)
+
+  return (
+    <>
+      <Modal ref={modalRef} />
+
+      <button
+        onClick={() =>
+          modalRef.current?.open()
+        }
+      >
+        Open
+      </button>
+    </>
+  )
+}
+```
+
+### ¿Qué recibe el padre?
+
+No recibe:
+
+```tsx
+{
+  isOpen,
+  setIsOpen
+}
+```
+
+ni tampoco:
+
+```tsx
+<div />
+```
+
+Recibe únicamente:
+
+```tsx
+{
+  open(),
+  close()
+}
+```
+
+porque eso es exactamente lo que decidimos exponer.
+
+### Encapsulación
+
+La principal ventaja es la encapsulación.
+
+Sin `useImperativeHandle`:
+
+```text
+Padre
+↓
+Acceso completo
+↓
+Implementación interna
+```
+
+Con `useImperativeHandle`:
+
+```text
+Padre
+↓
+API pública controlada
+↓
+Implementación privada
+```
+
+Es el mismo principio que usamos al diseñar componentes o clases:
+
+> Exponer únicamente lo necesario.
+
+### ¿Es declarativo o imperativo?
+
+React favorece un modelo declarativo.
+
+Por ejemplo:
+
+```tsx
+<Modal isOpen={isOpen} />
+```
+
+donde el estado controla la UI.
+
+Sin embargo, algunos problemas son más naturales de resolver de forma imperativa:
+
+```tsx
+modalRef.current?.open()
+videoRef.current?.play()
+editorRef.current?.focus()
+```
+
+`useImperativeHandle` existe para esos casos excepcionales.
+
+### Cuándo usarlo
+
+Suele tener sentido en componentes reutilizables que exponen acciones concretas:
+
+```text
+Modal
+Dialog
+Drawer
+DatePicker
+Editor de texto
+Video Player
+Canvas
+Mapas
+```
+
+---
+
+# Cuándo NO usarlo
+
+No debería convertirse en la forma principal de comunicación entre componentes.
+
+Generalmente es mejor:
+
+```tsx
+<Modal isOpen={isOpen} />
+```
+
+que:
+
+```tsx
+modalRef.current?.open()
+```
+
+si el problema puede resolverse mediante props y estado.
+
+### En resumen
+
+`useImperativeHandle` permite controlar exactamente qué valor recibe un componente padre a través de un `ref`. Su principal objetivo es exponer una API pública pequeña y bien definida, ocultando los detalles internos del componente. Aunque React favorece enfoques declarativos basados en props y estado, `useImperativeHandle` resulta útil cuando es necesario ofrecer acciones imperativas como `focus`, `open`, `close` o `reset`.
