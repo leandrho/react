@@ -1519,4 +1519,369 @@ const activeUsers = useMemo(() => {
 
 Con React Compiler, el objetivo es que el compilador pueda detectar automáticamente cuándo ese cálculo puede reutilizarse sin que el desarrollador tenga que escribir `useMemo`.
 
+### ¿Qué intenta optimizar?
+
+Principalmente:
+
+#### Cálculos repetidos
+
+```tsx
+const result =
+  expensiveCalculation(data)
+```
+#### Referencias estables
+
+```tsx
+const handleClick = () => {
+  ...
+}
+```
+#### Re-renderizados evitables
+
+Casos donde React puede demostrar que una parte de la UI no necesita recalcularse.
+
+### ¿Significa que useMemo desaparece?
+
+No. Al menos por ahora.
+
+Las APIs siguen existiendo y continúan siendo válidas.
+
+Lo que cambia es que muchas optimizaciones que antes eran manuales podrían dejar de ser necesarias.
+
+### La filosofía que React viene promoviendo
+
+Durante varios años el equipo de React ha insistido en una idea:
+
+> Es mejor escribir código simple y correcto que llenar la aplicación de optimizaciones preventivas.
+
+Por ejemplo:
+
+```tsx
+const fullName =
+  `${firstName} ${lastName}`
+```
+
+es preferible a:
+
+```tsx
+const fullName = useMemo(() => {
+  return `${firstName} ${lastName}`
+}, [firstName, lastName])
+```
+
+si no existe un problema real de rendimiento.
+
+React Compiler lleva esa filosofía un paso más allá.
+
+### Qué cambia para el desarrollador
+
+Con el enfoque tradicional:
+
+```text
+Escribir código
+↓
+Detectar posibles optimizaciones
+↓
+Agregar useMemo
+↓
+Agregar useCallback
+↓
+Mantener dependencias
+```
+
+Con React Compiler:
+
+```text
+Escribir código simple
+↓
+El compilador analiza
+↓
+Aplica optimizaciones seguras
+```
+
+### ¿Entonces ya no necesito entender useMemo o useCallback?
+
+Sí necesitás entenderlos.
+
+Por varias razones:
+
+1. Muchísimas aplicaciones seguirán utilizándolos durante años.
+2. No todos los proyectos usarán React Compiler.
+3. Comprenderlos ayuda a entender cómo funciona el renderizado de React.
+4. Existen casos avanzados donde las optimizaciones manuales seguirán siendo útiles.
+
+### Relación con todo lo que vimos
+
+Podemos pensar la evolución así:
+
+```text
+React básico
+↓
+Renderiza libremente
+
+Optimización manual
+↓
+useMemo
+useCallback
+React.memo
+
+Optimización automática
+↓
+React Compiler
+```
+
+La dirección que está tomando React es reducir la necesidad de optimizaciones manuales y permitir que los desarrolladores se concentren más en la lógica de negocio y menos en detalles de rendimiento.
+
+### En resumen
+
+`React Compiler` es una tecnología que busca automatizar gran parte de las optimizaciones que históricamente se realizaban con `useMemo`, `useCallback` y `React.memo`. Su objetivo es permitir que los desarrolladores escriban código más simple y declarativo mientras el compilador identifica y aplica optimizaciones seguras durante la compilación. Esto no elimina la importancia de comprender las herramientas actuales, pero sí cambia la dirección hacia la que evoluciona React.
+
+
+---
+
+# Refs avanzadas
+
+## `forwardRef`
+
+Hasta ahora vimos que un `ref` puede apuntar a un elemento del DOM:
+
+```tsx
+function App() {
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  return (
+    <input ref={inputRef} />
+  )
+}
+```
+
+Esto funciona porque `input` es un elemento nativo del DOM y React sabe dónde asignar el `ref`.
+
+Sin embargo, aparece un problema cuando intentamos hacer lo mismo con nuestros propios componentes.
+
+### El problema
+
+Supongamos:
+
+```tsx
+type InputProps = {
+  label: string
+}
+
+function Input({
+  label
+}: InputProps) {
+  return (
+    <>
+      <label>{label}</label>
+      <input />
+    </>
+  )
+}
+```
+
+Y luego:
+
+```tsx
+function App() {
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  return (
+    <Input
+      ref={inputRef}
+      label="Email"
+    />
+  )
+}
+```
+
+Esto no funcionaba en React 18 y versiones anteriores.
+
+¿Por qué?
+
+Porque el `ref` no se enviaba automáticamente al elemento `<input>` interno.
+
+React veía:
+
+```text
+App
+↓
+Input
+↓
+input
+```
+
+y el `ref` quedaba detenido en el componente `Input`.
+
+### La solución: forwardRef
+
+`forwardRef` permitía recibir el `ref` y reenviarlo manualmente al elemento deseado.
+
+```tsx
+import {
+  forwardRef
+} from "react"
+
+type InputProps = {
+  label: string
+}
+
+const Input = forwardRef<
+  HTMLInputElement,
+  InputProps
+>(function Input(
+  { label },
+  ref
+) {
+  return (
+    <>
+      <label>{label}</label>
+
+      <input ref={ref} />
+    </>
+  )
+})
+```
+
+Ahora:
+
+```tsx
+function App() {
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  return (
+    <Input
+      ref={inputRef}
+      label="Email"
+    />
+  )
+}
+```
+
+y `inputRef.current` apuntará al `<input>` real.
+
+### ¿Por qué existe?
+
+Los componentes suelen encapsular elementos internos.
+
+Por ejemplo:
+
+```tsx
+<Input />
+<DatePicker />
+<SearchBox />
+<Modal />
+```
+
+Pero a veces el componente padre necesita acceder a algún elemento interno para hacer foco, medir tamaño, controlar scroll, integrarse con librerías externas.
+
+`forwardRef` permitía exponer esa referencia sin romper la encapsulación del componente.
+
+### Ejemplo clásico: focus
+
+```tsx
+import {
+  forwardRef,
+  useRef
+} from "react"
+
+type InputProps = {
+  label: string
+}
+
+const Input = forwardRef<
+  HTMLInputElement,
+  InputProps
+>(function Input(
+  { label },
+  ref
+) {
+  return (
+    <>
+      <label>{label}</label>
+
+      <input ref={ref} />
+    </>
+  )
+})
+
+function App() {
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  return (
+    <>
+      <Input
+        ref={inputRef}
+        label="Email"
+      />
+
+      <button
+        onClick={() =>
+          inputRef.current?.focus()
+        }
+      >
+        Focus
+      </button>
+    </>
+  )
+}
+```
+
+El padre no conoce el `<input>` interno, pero puede interactuar con él mediante el `ref`.
+
+---
+
+### ¿forwardRef comparte datos?
+
+No. No comparte estado. No comparte props. No comparte lógica.
+
+Únicamente comparte una referencia.
+
+```text
+Padre
+↓
+ref
+↓
+Elemento interno
+```
+
+### Limitaciones
+
+Un detalle importante `inputRef.current` expone el elemento completo.
+
+Eso significa que el componente padre puede hacer:
+
+```tsx
+inputRef.current?.focus()
+inputRef.current?.blur()
+inputRef.current?.select()
+```
+
+e incluso manipular directamente propiedades del DOM.
+
+A veces esto es deseable.
+
+A veces expone más de lo que realmente queremos mostrar.
+
+Ese problema es precisamente lo que intenta resolver:
+
+```tsx
+useImperativeHandle()
+```
+
+que veremos a continuación.
+
+---
+
+### React 19
+
+Es importante entender que `forwardRef` fue la solución tradicional en React 18 y versiones anteriores.
+
+En React 19, los componentes pueden recibir `ref` como una prop normal, eliminando gran parte de la necesidad de utilizar `forwardRef`.
+
+Por eso hoy se considera importante conocerlo porque existe muchísimo código que lo utiliza, pero el enfoque moderno apunta hacia un modelo más simple que veremos después.
+
+### En resumen
+
+`forwardRef` permite reenviar una referencia recibida por un componente hacia uno de sus elementos internos. Su principal utilidad es exponer elementos del DOM encapsulados dentro de componentes reutilizables, permitiendo operaciones como foco, medición o integración con librerías externas. En React 19 su importancia disminuye porque `ref` puede recibirse como una prop común, pero sigue siendo fundamental para comprender gran parte del ecosistema existente.
 
