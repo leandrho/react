@@ -2153,3 +2153,228 @@ si el problema puede resolverse mediante props y estado.
 ### En resumen
 
 `useImperativeHandle` permite controlar exactamente qué valor recibe un componente padre a través de un `ref`. Su principal objetivo es exponer una API pública pequeña y bien definida, ocultando los detalles internos del componente. Aunque React favorece enfoques declarativos basados en props y estado, `useImperativeHandle` resulta útil cuando es necesario ofrecer acciones imperativas como `focus`, `open`, `close` o `reset`.
+
+
+---
+
+## React 19: `ref` como prop común
+
+Hasta React 18, `ref` era una prop especial que React trataba de manera distinta al resto. Los componentes funcionales no podían recibirla directamente.
+
+Por ejemplo, esto no funcionaba:
+
+```tsx
+function Input() {
+  return <input />
+}
+
+function App() {
+  const inputRef =
+    useRef<HTMLInputElement>(null)
+
+  return (
+    <Input ref={inputRef} />
+  )
+}
+```
+
+Para que funcionara era necesario utilizar `forwardRef`.
+
+### El cambio en React 19
+
+En React 19, `ref` pasa a comportarse como una prop normal.
+
+Ahora un componente puede recibirla directamente:
+
+```tsx
+import { Ref } from "react"
+
+type InputProps = {
+  ref?: Ref<HTMLInputElement>
+}
+
+function Input({
+  ref
+}: InputProps) {
+  return <input ref={ref} />
+}
+```
+
+Y utilizarse así:
+
+```tsx
+function App() {
+  const inputRef =
+    useRef<HTMLInputElement>(null)
+
+  return (
+    <Input ref={inputRef} />
+  )
+}
+```
+
+Sin `forwardRef`.
+
+### ¿Qué problema resuelve?
+
+Principalmente elimina una capa de complejidad.
+
+Antes:
+
+```text
+Padre
+↓
+ref
+↓
+forwardRef
+↓
+Componente
+↓
+Elemento interno
+```
+
+Ahora:
+
+```text
+Padre
+↓
+ref
+↓
+Componente
+↓
+Elemento interno
+```
+
+La intención es hacer que trabajar con refs sea tan natural como trabajar con cualquier otra prop.
+
+### Relación con useImperativeHandle
+
+Nada cambia aquí.
+
+Si queremos exponer una API personalizada seguimos utilizando:
+
+```tsx
+useImperativeHandle(...)
+```
+
+Por ejemplo:
+
+```tsx
+import {
+  Ref,
+  useImperativeHandle,
+  useRef
+} from "react"
+
+type ModalHandle = {
+  open: () => void
+}
+
+type ModalProps = {
+  ref?: Ref<ModalHandle>
+}
+
+function Modal({
+  ref
+}: ModalProps) {
+  const dialogRef =
+    useRef<HTMLDialogElement>(null)
+
+  useImperativeHandle(ref, () => ({
+    open() {
+      dialogRef.current?.showModal()
+    }
+  }))
+
+  return <dialog ref={dialogRef} />
+}
+```
+
+La diferencia es que ya no necesitamos `forwardRef` para recibir el `ref`.
+
+
+### ¿Desaparece forwardRef?
+
+No inmediatamente.
+
+Hay muchísimo código existente que utiliza `forwardRef(...)` y seguirá funcionando.
+
+Pero para código nuevo en React 19, la recomendación general es preferir:
+
+```tsx
+function Component({
+  ref
+}: Props) {
+  ...
+}
+```
+
+cuando sea posible.
+
+### Evolución histórica
+
+```text
+React 18 y anteriores
+↓
+ref no llega al componente
+↓
+forwardRef
+
+React 19
+↓
+ref llega como prop normal
+↓
+forwardRef deja de ser necesario en muchos casos
+```
+
+## Resumen final de Refs
+
+### `useRef`
+
+Permite almacenar valores mutables que persisten entre renders sin provocar nuevos renderizados.
+
+```tsx
+const inputRef =
+  useRef<HTMLInputElement>(null)
+```
+
+---
+
+### `useImperativeHandle`
+
+Permite controlar qué expone un componente a través de un `ref`.
+
+```tsx
+useImperativeHandle(ref, () => ({
+  open,
+  close
+}))
+```
+
+---
+
+### `forwardRef`
+
+Mecanismo histórico utilizado para reenviar refs en React 18 y anteriores.
+
+```tsx
+forwardRef(...)
+```
+
+---
+
+### React 19
+
+`ref` puede recibirse como una prop común.
+
+```tsx
+function Input({
+  ref
+}: Props) {
+  ...
+}
+```
+
+### En resumen
+
+React 19 simplifica el trabajo con referencias permitiendo que `ref` se reciba como una prop normal. Esto reduce la necesidad de utilizar `forwardRef` y hace que los componentes sean más sencillos de escribir y entender. Sin embargo, los conceptos fundamentales de refs (`useRef`) y la personalización de APIs mediante `useImperativeHandle` siguen siendo exactamente igual de importantes.
