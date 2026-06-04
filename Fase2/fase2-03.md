@@ -1213,3 +1213,310 @@ Juntos pueden evitar renders innecesarios cuando realmente existe un problema de
 ### En resumen
 
 `React.memo` permite que React reutilice el resultado de un componente cuando sus props no cambiaron. Su objetivo es evitar renderizados innecesarios en componentes costosos o que reciben las mismas props con frecuencia. Funciona mediante una comparación superficial de props y suele combinarse con `useCallback` y `useMemo` para mantener estables las referencias que participan en esa comparación.
+
+---
+
+## Cuándo optimizar (y cuándo es prematuro)
+
+Después de aprender `useMemo`, `useCallback` y `React.memo`, es muy común caer en una trampa:
+
+```tsx
+const value = useMemo(...)
+const handler = useCallback(...)
+const Child = memo(...)
+```
+
+↓
+
+```text
+"Así mi aplicación será más rápida"
+```
+
+En realidad, muchas veces ocurre lo contrario.
+
+### La optimización prematura
+
+Existe una frase muy conocida en ingeniería de software:
+
+> "Premature optimization is the root of all evil."
+
+La idea no es que optimizar sea malo, sino que optimizar antes de tener un problema real suele generar más costos que beneficios.
+
+Por ejemplo:
+
+```tsx
+const fullName = useMemo(() => {
+  return `${firstName} ${lastName}`
+}, [firstName, lastName])
+```
+
+o:
+
+```tsx
+const handleClick = useCallback(() => {
+  console.log("click")
+}, [])
+```
+
+En la mayoría de los casos esto no aporta ninguna mejora perceptible.
+
+Sin embargo sí agrega:
+
+* más código,
+* más dependencias,
+* más complejidad mental,
+* más posibilidades de errores.
+
+### React ya está optimizado
+
+Un punto importante:
+
+> React fue diseñado para renderizar con frecuencia.
+
+Cuando un componente renderiza:
+
+```text
+Render
+↓
+Nueva descripción de UI
+↓
+Diffing
+↓
+Actualización mínima del DOM
+```
+
+El simple hecho de que un componente se renderice no significa que el navegador esté haciendo trabajo costoso.
+
+Por eso:
+
+```text
+Re-render ≠ problema
+```
+
+### Qué sí debería preocuparnos
+
+Normalmente optimizamos cuando existe alguno de estos síntomas:
+
+#### Cálculos costosos
+
+```tsx
+const result =
+  expensiveCalculation(data)
+```
+
+que tardan tiempo perceptible.
+
+#### Componentes pesados
+
+```tsx
+<BigTable />
+<LargeChart />
+<Map />
+```
+
+que renderizan cientos o miles de elementos.
+
+
+#### Re-renderizados excesivos
+
+Cuando una interacción sencilla provoca que grandes partes de la aplicación vuelvan a renderizarse innecesariamente.
+
+#### Problemas visibles para el usuario
+
+Por ejemplo:
+
+```text
+Scroll entrecortado
+Inputs lentos
+Animaciones con saltos
+Pantallas que se congelan
+```
+
+Si el usuario no percibe ningún problema, probablemente no haya nada que optimizar.
+
+### React DevTools Profiler
+
+Cuando realmente sospechamos un problema de rendimiento, la herramienta principal es:
+
+[React DevTools Profiler](https://react.dev/learn/react-developer-tools?utm_source=chatgpt.com)
+
+Permite ver:
+
+* qué componentes renderizan,
+* cuántas veces renderizan,
+* cuánto tarda cada render,
+* qué actualizaciones provocaron esos renders.
+
+La regla es simple:
+
+> No adivinar. Medir.
+
+### El costo oculto de optimizar
+
+Toda optimización tiene un costo.
+
+Por ejemplo:
+
+```tsx
+useMemo(...)
+```
+
+implica:
+
+```text
+Guardar dependencias
+Compararlas
+Mantener una cache
+```
+
+---
+
+```tsx
+useCallback(...)
+```
+
+implica:
+
+```text
+Guardar referencias
+Comparar dependencias
+```
+
+---
+
+```tsx
+React.memo(...)
+```
+
+implica:
+
+```text
+Comparar props
+Guardar render previo
+```
+
+Por eso:
+
+> Optimizar algo barato puede terminar siendo más caro que recalcularlo.
+
+### Regla práctica
+
+Antes de usar una herramienta de optimización preguntate:
+
+1. ¿Existe un problema de rendimiento observable?
+2. ¿Puedo medir ese problema?
+3. ¿Sé exactamente qué trabajo estoy intentando evitar?
+
+Si alguna respuesta es "no", probablemente todavía no sea momento de optimizar.
+
+### En resumen
+
+Las herramientas de optimización existen para resolver problemas concretos de rendimiento, no para usarse por defecto. Un re-render no es necesariamente costoso y React ya realiza muchas optimizaciones internamente. La mejor estrategia suele ser escribir código simple y correcto, medir cuando aparezcan problemas reales y optimizar únicamente las partes de la aplicación que demuestren ser un cuello de botella.
+
+
+---
+
+## React Compiler: el futuro de la optimización
+
+Durante años, React ofreció herramientas como:
+
+```tsx
+useMemo(...)
+useCallback(...)
+React.memo(...)
+```
+
+para evitar cálculos o renderizados innecesarios.
+
+El problema es que estas optimizaciones son **manuales**. El desarrollador debe identificar el problema, entender qué está ocurriendo y decidir dónde aplicar cada herramienta.
+
+Por ejemplo:
+
+```tsx
+const filteredUsers = useMemo(() => {
+  return users.filter(user => user.active)
+}, [users])
+```
+
+o:
+
+```tsx
+const handleClick = useCallback(() => {
+  saveUser()
+}, [])
+```
+
+El código funciona, pero ahora el desarrollador también debe preocuparse por dependencias, referencias y memoización.
+
+
+### El problema de las optimizaciones manuales
+
+En la práctica ocurren dos situaciones muy comunes:
+
+#### Se optimiza demasiado
+
+```tsx
+const fullName = useMemo(() => {
+  return `${firstName} ${lastName}`
+}, [firstName, lastName])
+```
+
+No aporta ningún beneficio real.
+
+#### Se optimiza demasiado poco
+
+```tsx
+const expensiveData =
+  processLargeDataset(data)
+```
+
+y nadie detecta el problema hasta que la aplicación empieza a volverse lenta.
+
+### La idea detrás de React Compiler
+
+React Compiler intenta mover gran parte de este trabajo desde el desarrollador hacia una herramienta de compilación.
+
+La idea es:
+
+```text
+Código React
+↓
+React Compiler analiza el código
+↓
+Detecta optimizaciones seguras
+↓
+Genera código optimizado
+```
+
+de forma automática.
+
+### Un ejemplo conceptual
+
+Supongamos:
+
+```tsx
+function UserList({
+  users
+}: {
+  users: User[]
+}) {
+  const activeUsers =
+    users.filter(user => user.active)
+
+  return ...
+}
+```
+
+Hoy un desarrollador podría pensar:
+
+```tsx
+const activeUsers = useMemo(() => {
+  return users.filter(
+    user => user.active
+  )
+}, [users])
+```
+
+Con React Compiler, el objetivo es que el compilador pueda detectar automáticamente cuándo ese cálculo puede reutilizarse sin que el desarrollador tenga que escribir `useMemo`.
+
+
