@@ -2130,9 +2130,7 @@ Canvas
 Mapas
 ```
 
----
-
-# Cuándo NO usarlo
+### Cuándo NO usarlo
 
 No debería convertirse en la forma principal de comunicación entre componentes.
 
