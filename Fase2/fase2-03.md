@@ -526,14 +526,6 @@ El componente sigue renderizando normalmente.
 
 Lo único que evita `useMemo` es volver a ejecutar un cálculo específico.
 
-```text
-Render
-↓
-Componente ejecutado
-↓
-useMemo reutiliza resultado
-```
-
 ### ¿Qué debería ir dentro de useMemo?
 
 Principalmente cálculos costosos.
@@ -623,9 +615,7 @@ Por eso:
 
 > Memoizar algo barato puede costar más que recalcularlo.
 
----
-
-# Regla práctica
+### Regla práctica
 
 Antes de usar `useMemo`, preguntate:
 
