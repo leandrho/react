@@ -1364,3 +1364,350 @@ Grandes árboles de componentes
 ### En resumen
 
 El principal problema de performance de Context es que cuando el valor proporcionado por un Provider cambia, React vuelve a renderizar todos los componentes que consumen ese contexto, incluso si solo utilizan una pequeña parte de la información. Esto no suele ser un problema para datos globales relativamente estables como autenticación o temas visuales, pero puede convertirse en una limitación cuando el estado es grande, cambia con frecuencia o tiene muchos consumidores. Por eso es habitual dividir contextos o recurrir a soluciones como Zustand y Jotai para escenarios más complejos.
+
+---
+
+## Alternativas modernas: Zustand y Jotai
+
+Después de entender las limitaciones de Context, surge una pregunta natural:
+
+> Si Context empieza a sufrir cuando el estado crece o cambia con frecuencia, ¿qué se utiliza en aplicaciones modernas?
+
+Actualmente las alternativas más populares y recomendadas dentro del ecosistema React son:
+
+* [Zustand](https://zustand.docs.pmnd.rs?utm_source=chatgpt.com)
+* [Jotai](https://jotai.org?utm_source=chatgpt.com)
+
+Ambas buscan resolver problemas que aparecen cuando Context comienza a escalar.
+
+### El problema que intentan resolver
+
+Recordemos el principal problema de Context:
+
+```text
+Context cambia
+↓
+Todos los consumidores
+pueden renderizar nuevamente
+```
+
+Aunque un componente solo necesite una pequeña parte del estado.
+
+Por ejemplo:
+
+```text
+State
+├─ user
+├─ theme
+├─ notifications
+└─ cart
+```
+
+Si cambia:
+
+```text
+theme
+```
+
+muchos consumidores pueden volver a renderizar.
+
+### La idea moderna: suscripciones selectivas
+
+En lugar de decir:
+
+```text
+Consumo todo el contexto
+```
+
+las librerías modernas permiten decir:
+
+```text
+Solo me interesa esta parte
+del estado
+```
+
+Por ejemplo:
+
+```tsx
+const count =
+  useStore(state => state.count)
+```
+
+Ahora:
+
+```text
+theme cambia
+↓
+count no cambió
+↓
+Este componente no renderiza
+```
+
+
+## Zustand
+
+Zustand probablemente sea la librería de estado global más popular y simple del ecosistema React actual.
+
+Su filosofía es:
+
+```text
+Store central
++
+Hooks
++
+Poca configuración
+```
+
+### Crear un store
+
+```tsx
+import { create } from "zustand"
+
+type CounterStore = {
+  count: number
+
+  increment: () => void
+}
+
+const useCounterStore =
+  create<CounterStore>(
+    set => ({
+      count: 0,
+
+      increment: () =>
+        set(state => ({
+          count:
+            state.count + 1
+        }))
+    })
+  )
+```
+
+### Consumir estado
+
+```tsx
+function Counter() {
+  const count =
+    useCounterStore(
+      state => state.count
+    )
+
+  return <p>{count}</p>
+}
+```
+### Actualizar estado
+
+```tsx
+function IncrementButton() {
+  const increment =
+    useCounterStore(
+      state => state.increment
+    )
+
+  return (
+    <button
+      onClick={increment}
+    >
+      +
+    </button>
+  )
+}
+```
+### Lo importante
+
+Cuando cambia:
+
+```text
+count
+```
+
+solo renderizan los componentes que usan:
+
+```text
+count
+```
+
+No existe el problema clásico del Context global.
+
+## Jotai
+
+Jotai toma una filosofía completamente distinta.
+
+En lugar de tener un store central, divide el estado en pequeñas unidades llamadas:
+
+```text
+Atoms
+```
+
+(atomos).
+
+#### Crear un atom
+
+```tsx
+import { atom } from "jotai"
+
+const countAtom =
+  atom(0)
+```
+
+
+#### Consumirlo
+
+```tsx
+import { useAtom }
+  from "jotai"
+
+function Counter() {
+  const [count] =
+    useAtom(countAtom)
+
+  return <p>{count}</p>
+}
+```
+
+#### Actualizarlo
+
+```tsx
+function IncrementButton() {
+  const [
+    ,
+    setCount
+  ] = useAtom(countAtom)
+
+  return (
+    <button
+      onClick={() =>
+        setCount(
+          prev => prev + 1
+        )
+      }
+    >
+      +
+    </button>
+  )
+}
+```
+
+### Diferencia conceptual
+
+#### Zustand
+
+Piensa:
+
+```text
+Tengo un store
+global
+```
+
+muy parecido a Redux.
+
+```text
+Store
+├─ user
+├─ theme
+├─ cart
+└─ notifications
+```
+
+#### Jotai
+
+Piensa:
+
+```text
+Tengo muchas piezas
+pequeñas de estado
+```
+
+```text
+userAtom
+themeAtom
+cartAtom
+notificationAtom
+```
+
+Cada una independiente.
+
+#### Comparación rápida
+
+| Característica           | Context | Zustand | Jotai |
+| ------------------------ | ------- | ------- | ----- |
+| Incluido en React        | ✅       | ❌       | ❌     |
+| Evita prop drilling      | ✅       | ✅       | ✅     |
+| Suscripciones selectivas | ❌       | ✅       | ✅     |
+| Muy simple               | ✅       | ✅       | ✅     |
+| Escala mejor             | ⚠️      | ✅       | ✅     |
+| Estado global            | ⚠️      | ✅       | ✅     |
+
+#### ¿Y Redux?
+
+Históricamente Redux fue la solución dominante.
+
+Hoy, para muchas aplicaciones nuevas:
+
+```text
+Redux
+↓
+Zustand
+```
+
+se ha vuelto una migración bastante común porque Zustand ofrece:
+
+* menos código,
+* menos configuración,
+* curva de aprendizaje menor.
+
+Sin embargo Redux sigue siendo muy utilizado en empresas grandes y proyectos existentes.
+
+### ¿Cuál deberías aprender?
+
+Mi recomendación para una mentoría profunda de React sería:
+
+#### Obligatorio
+
+* `useState`
+* `useReducer`
+* Context API
+
+Porque son parte de React y aparecen en todos lados.
+
+#### Muy recomendable
+
+* Zustand
+
+Porque actualmente es una de las soluciones más adoptadas para estado global moderno.
+
+#### Interesante conocer
+
+* Jotai
+
+Porque introduce un modelo diferente basado en atoms que influenció muchas herramientas modernas.
+
+### Evolución histórica
+
+Podemos pensar la evolución así:
+
+```text
+Estado local
+↓
+useState
+
+Estado complejo
+↓
+useReducer
+
+Estado compartido
+↓
+Context
+
+Estado global escalable
+↓
+Zustand / Jotai
+
+Grandes ecosistemas empresariales
+↓
+Redux Toolkit
+```
+
+### En resumen
+
+Context es una excelente solución para compartir información en React, pero cuando el estado crece y las actualizaciones se vuelven frecuentes pueden aparecer problemas de escalabilidad y rendimiento. Librerías como Zustand y Jotai resuelven este problema mediante suscripciones más precisas, permitiendo que los componentes reaccionen únicamente a la parte del estado que realmente utilizan. Actualmente, Zustand se ha convertido en una de las alternativas más populares por su simplicidad, mientras que Jotai propone un enfoque más granular basado en atoms.
