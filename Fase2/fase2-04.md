@@ -410,3 +410,297 @@ Por eso aprender `useReducer` ayuda enormemente a comprender Redux y otras libre
 ### En resumen
 
 `useReducer` es una alternativa a `useState` diseñada para manejar estados complejos y centralizar la lógica de actualización. En lugar de modificar el estado directamente, los componentes envían acciones mediante `dispatch`, y un reducer determina cómo debe cambiar el estado. Esto hace que las transiciones sean más explícitas, facilita el mantenimiento y permite escalar mejor cuando la lógica de negocio comienza a crecer.
+
+---
+
+## Context API: crear, proveer y consumir contexto
+
+La **Context API** es un mecanismo que permite compartir información entre componentes sin necesidad de pasar props manualmente a través de múltiples niveles del árbol.
+
+Su objetivo principal es resolver el problema conocido como:
+
+```text
+Prop Drilling
+```
+
+es decir, tener que pasar props por componentes intermedios que ni siquiera las utilizan.
+
+### El problema
+
+Supongamos la siguiente estructura:
+
+```text
+App
+└─ Layout
+   └─ Header
+      └─ UserMenu
+```
+
+Y que `UserMenu` necesita conocer el usuario autenticado.
+
+Sin Context:
+
+```tsx
+<App user={user} />
+```
+↓
+```tsx
+<Layout user={user} />
+```
+↓
+```tsx
+<Header user={user} />
+```
+↓
+```tsx
+<UserMenu user={user} />
+```
+
+Aunque:
+
+```text
+Layout
+Header
+```
+
+no utilicen esa información.
+
+Esto es prop drilling.
+
+### La idea de Context
+
+Context permite colocar información en una especie de "canal compartido" para que cualquier componente descendiente pueda acceder a ella.
+
+Conceptualmente:
+
+```text
+Provider
+↓
+Árbol de componentes
+↓
+Consumer
+```
+
+Sin importar cuántos niveles existan entre ambos.
+
+
+### Paso 1: Crear el contexto
+
+Todo comienza con:
+
+```tsx
+import { createContext } from "react"
+
+type AuthContextValue = {
+  user: string | null
+}
+
+const AuthContext =
+  createContext<AuthContextValue | null>(
+    null
+  )
+```
+
+`createContext` crea un objeto que representa el contexto.
+
+Podemos imaginarlo como:
+
+```text
+Canal de comunicación
+```
+
+que luego será utilizado por Providers y Consumers.
+
+### Paso 2: Proveer el contexto
+
+Crear el contexto no alcanza.
+
+También debemos proporcionar un valor.
+
+```tsx
+function App() {
+  const user = "Leandro"
+
+  return (
+    <AuthContext.Provider
+      value={{ user }}
+    >
+      <Layout />
+    </AuthContext.Provider>
+  )
+}
+```
+
+El Provider establece:
+
+```text
+Qué valor compartir
+```
+con todos los componentes descendientes.
+
+### Paso 3: Consumir el contexto
+
+Para leer el valor utilizamos:
+
+```tsx
+import { useContext } from "react"
+```
+
+```tsx
+function UserMenu() {
+  const auth =
+    useContext(AuthContext)
+
+  return (
+    <p>{auth?.user}</p>
+  )
+}
+```
+
+React busca el Provider más cercano y devuelve su valor.
+
+### ¿Cómo encuentra React el valor?
+
+Conceptualmente:
+
+```text
+UserMenu
+↓
+Busca Provider
+↑
+Header
+↑
+Layout
+↑
+AuthContext.Provider
+```
+
+Cuando lo encuentra: `Devuelve value`
+
+### Qué ocurre cuando cambia el contexto
+
+Supongamos:
+
+```tsx
+<AuthContext.Provider
+  value={{ user }}
+>
+```
+
+y luego:
+
+```tsx
+setUser("Juan")
+```
+
+El valor del contexto cambia.
+
+React volverá a renderizar todos los consumidores que utilicen ese contexto.
+
+```text
+Provider cambia
+↓
+Consumers renderizan nuevamente
+```
+
+Este detalle será muy importante cuando hablemos de performance.
+
+### Context no es estado
+
+Este es un error muy común.
+
+Mucha gente piensa:
+
+```text
+Context = State Management
+```
+
+pero no es exactamente así.
+
+Context solamente responde a la pregunta:
+
+```text
+¿Cómo comparto datos?
+```
+
+No responde:
+
+```text
+¿Cómo actualizo esos datos?
+¿Cómo organizo la lógica?
+```
+
+Por eso normalmente aparece junto a:
+
+```tsx
+useState
+```
+
+o:
+
+```tsx
+useReducer
+```
+
+### Ejemplo típico
+
+```tsx
+type ThemeContextValue = {
+  theme: "light" | "dark"
+}
+```
+
+```tsx
+const ThemeContext =
+  createContext<
+    ThemeContextValue | null
+  >(null)
+```
+
+```tsx
+<ThemeContext.Provider
+  value={{ theme }}
+>
+  <App />
+</ThemeContext.Provider>
+```
+
+Consumir:
+
+```tsx
+const theme =
+  useContext(ThemeContext)
+```
+
+### Casos de uso comunes
+
+Context suele utilizarse para información global o semiglobal:
+
+```text
+Usuario autenticado
+Tema visual
+Idioma
+Permisos
+Configuración
+Carrito de compras
+```
+
+## Context en React moderno
+
+Hoy es muy común ver una estructura como:
+
+```tsx
+<AuthProvider>
+  <ThemeProvider>
+    <CartProvider>
+      <App />
+    </CartProvider>
+  </ThemeProvider>
+</AuthProvider>
+```
+
+Cada Provider comparte una responsabilidad específica.
+
+### En resumen
+
+La Context API permite compartir información entre componentes sin necesidad de prop drilling. Un contexto se crea mediante `createContext`, se distribuye usando un Provider y se consume con `useContext`. Context no reemplaza al estado ni gestiona la lógica de actualización; simplemente proporciona un mecanismo para hacer que ciertos datos estén disponibles en cualquier parte de una sección del árbol de componentes.
