@@ -14,3 +14,4 @@ Plan de estudio para React, de iniciantes a avanzado
 * [useEffect en profundidad](Fase2/fase2-01.md)
 * [Custom Hooks](Fase2/fase2-02.md)
 * [Hooks de optimización](Fase2/fase2-03.md)
+* [useReducer y useContext](Fase2/fase2-04.md)
