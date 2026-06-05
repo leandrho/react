@@ -115,13 +115,13 @@ En cambio, utiliza heurísticas y reglas optimizadas para hacer la comparación 
 
 1. **Elementos de distinto tipo → React destruye y recrea**
 
-```tsx id="ns3rxg"
+```tsx
 <div />
 ```
 
 →
 
-```tsx id="6q4slj"
+```tsx
 <span />
 ```
 
@@ -131,13 +131,13 @@ React desmonta el anterior y crea uno nuevo.
 
 2. **Elementos del mismo tipo → React reutiliza el nodo**
 
-```tsx id="u35k78"
+```tsx
 <h1 className="red" />
 ```
 
 →
 
-```tsx id="ftt2e0"
+```tsx
 <h1 className="blue" />
 ```
 
@@ -147,13 +147,13 @@ React mantiene el mismo nodo y actualiza solo las props necesarias.
 
 3. **Los componentes también se comparan por tipo**
 
-```tsx id="hmql5h"
+```tsx
 <UserCard />
 ```
 
 →
 
-```tsx id="3u2qk1"
+```tsx
 <ProductCard />
 ```
 
@@ -163,7 +163,7 @@ React desmonta uno y monta el otro.
 
 4. **Las keys identifican elementos en listas**
 
-```tsx id="71x9d9"
+```tsx
 items.map(item => (
   <li key={item.id}>{item.name}</li>
 ))
