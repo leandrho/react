@@ -1089,7 +1089,7 @@ React.memo falla
 
 Muchas veces se utiliza:
 
-```tsx id="r2f32h"
+```tsx
 const options = useMemo(() => {
   return {
     sortBy: "name"
