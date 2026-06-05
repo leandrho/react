@@ -1027,3 +1027,340 @@ Por eso muchas aplicaciones modernas terminan utilizando herramientas especializ
 ### En resumen
 
 La combinación de Context y `useReducer` permite construir una solución de estado global utilizando únicamente herramientas nativas de React. `useReducer` centraliza la lógica de actualización mediante acciones y reducers, mientras que Context distribuye el estado y el `dispatch` a cualquier componente del árbol. Este patrón comparte muchos conceptos con Redux y suele ser suficiente para aplicaciones pequeñas y medianas sin necesidad de incorporar librerías externas.
+
+---
+
+## Problemas de performance del Context
+
+Después de aprender Context, es muy común pensar:
+
+> "Perfecto, entonces voy a poner todo mi estado global dentro de Context."
+
+Y ahí es donde suelen empezar los problemas.
+
+Context resuelve muy bien el **prop drilling**, pero no fue diseñado para ser una solución completa de gestión de estado de alta performance.
+
+### El problema fundamental
+
+Supongamos este contexto:
+
+```tsx
+type AppContextValue = {
+  user: User | null
+  theme: "light" | "dark"
+  notifications: Notification[]
+}
+```
+
+```tsx
+<AppContext.Provider value={value}>
+  <App />
+</AppContext.Provider>
+```
+
+Y tres consumidores:
+
+```text
+Navbar        → usa user
+ThemeToggle   → usa theme
+Notifications → usa notifications
+```
+
+### ¿Qué ocurre si cambia `theme`?
+
+```tsx
+setTheme("dark")
+```
+
+React ve:
+
+```text
+Nuevo value
+↓
+Context cambió
+↓
+Notificar consumidores
+```
+
+Entonces:
+
+```text
+Navbar render
+ThemeToggle render
+Notifications render
+```
+
+Aunque:
+
+```text
+Navbar no usa theme
+Notifications no usa theme
+```
+
+### Context no tiene selectores
+
+Este es el punto clave.
+
+Cuando hacemos:
+
+```tsx
+const context =
+  useContext(AppContext)
+```
+
+React no sabe qué parte del objeto estás usando.
+
+Solo sabe:
+
+```text
+Este componente consume AppContext
+```
+
+Por lo tanto:
+
+```text
+Context cambia
+↓
+Consumer renderiza
+```
+
+### Ejemplo visual
+
+```text
+Context
+├─ user
+├─ theme
+└─ notifications
+```
+
+Cambia:
+
+```text
+theme
+```
+
+React no puede pensar:
+
+```text
+Solo renderizo ThemeToggle
+```
+
+Piensa:
+
+```text
+Cambió AppContext
+↓
+Renderizar todos los consumidores
+```
+
+### El problema escala
+
+Imaginemos:
+
+```text
+50 componentes
+↓
+usan el mismo contexto
+```
+
+Cada actualización provoca:
+
+```text
+50 renders potenciales
+```
+
+Aunque solo uno de ellos necesite el dato actualizado.
+
+### Primer consejo: dividir contextos
+
+En lugar de:
+
+```tsx
+<AppContext>
+```
+
+es preferible:
+
+```tsx
+<AuthProvider>
+  <ThemeProvider>
+    <NotificationProvider>
+      <App />
+    </NotificationProvider>
+  </ThemeProvider>
+</AuthProvider>
+```
+
+Ahora:
+
+```text
+Theme cambia
+↓
+Solo consumidores de ThemeContext
+```
+
+### Segundo consejo: estabilizar referencias
+
+Veamos esto:
+
+```tsx
+<AuthContext.Provider
+  value={{
+    user,
+    logout
+  }}
+>
+```
+
+Problema:
+
+Cada render crea un objeto nuevo.
+
+```text
+Render
+↓
+Nuevo objeto
+↓
+Nuevo value
+↓
+Context cambia
+```
+
+Incluso aunque:
+
+```text
+user no cambió
+logout no cambió
+```
+
+Por eso suele verse:
+
+```tsx
+const value = useMemo(() => {
+  return {
+    user,
+    logout
+  }
+}, [user, logout])
+```
+
+para mantener estable la referencia.
+
+### Context + useReducer tampoco escapa
+
+Supongamos:
+
+```tsx
+const [state, dispatch] =
+  useReducer(...)
+```
+
+y luego:
+
+```tsx
+<CartContext.Provider
+  value={{
+    state,
+    dispatch
+  }}
+>
+```
+
+Cuando cambia cualquier parte de:
+
+```tsx
+state
+```
+
+todos los consumidores del contexto pueden volver a renderizar.
+
+Por ejemplo:
+
+```text
+CartCount
+CartSummary
+CartTotal
+CartItems
+```
+
+aunque solo cambie una propiedad específica.
+
+### Por qué nacieron Zustand y Jotai
+
+Precisamente para resolver este problema.
+
+Estas librerías permiten:
+
+```text
+Suscribirse a una parte específica
+del estado
+```
+
+Por ejemplo:
+
+```tsx
+const count =
+  useStore(state => state.count)
+```
+
+Si cambia:
+
+```text
+theme
+```
+
+el componente que usa:
+
+```text
+count
+```
+
+no renderiza.
+
+### ¿Es Context lento?
+
+No.
+
+Este es otro error muy común.
+
+Context es perfectamente válido para:
+
+* usuario autenticado,
+* tema,
+* idioma,
+* configuración,
+* datos que cambian poco.
+
+El problema aparece cuando intentamos usar Context para:
+
+```text
+Estado enorme
++
+Muchas actualizaciones
++
+Muchos consumidores
+```
+
+### Regla práctica
+
+Context suele ser excelente para:
+
+```text
+Auth
+Theme
+Locale
+Settings
+Feature flags
+```
+
+Empieza a mostrar limitaciones cuando tenemos:
+
+```text
+Estados complejos
+Actualizaciones frecuentes
+Grandes árboles de componentes
+```
+
+### En resumen
+
+El principal problema de performance de Context es que cuando el valor proporcionado por un Provider cambia, React vuelve a renderizar todos los componentes que consumen ese contexto, incluso si solo utilizan una pequeña parte de la información. Esto no suele ser un problema para datos globales relativamente estables como autenticación o temas visuales, pero puede convertirse en una limitación cuando el estado es grande, cambia con frecuencia o tiene muchos consumidores. Por eso es habitual dividir contextos o recurrir a soluciones como Zustand y Jotai para escenarios más complejos.
