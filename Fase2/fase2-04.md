@@ -704,3 +704,326 @@ Cada Provider comparte una responsabilidad específica.
 ### En resumen
 
 La Context API permite compartir información entre componentes sin necesidad de prop drilling. Un contexto se crea mediante `createContext`, se distribuye usando un Provider y se consume con `useContext`. Context no reemplaza al estado ni gestiona la lógica de actualización; simplemente proporciona un mecanismo para hacer que ciertos datos estén disponibles en cualquier parte de una sección del árbol de componentes.
+
+---
+
+## Context + useReducer = mini Redux
+
+Después de aprender `useReducer` y Context por separado, es natural combinarlos.
+
+De hecho, esta combinación es probablemente el patrón de gestión de estado global más común construido únicamente con herramientas nativas de React.
+
+La idea es muy simple:
+
+```text
+useReducer
+↓
+Gestiona el estado
+
+Context
+↓
+Distribuye el estado
+```
+
+Juntos permiten construir una pequeña arquitectura centralizada muy similar a Redux.
+
+### El problema
+
+Supongamos que tenemos un carrito de compras.
+
+Muchos componentes necesitan acceder a él:
+
+```text
+Navbar
+ProductList
+ProductCard
+CartSidebar
+Checkout
+```
+
+Necesitamos:
+
+* leer productos,
+* agregar productos,
+* eliminar productos,
+* vaciar carrito.
+
+Si usamos únicamente props:
+
+```text
+App
+↓
+Navbar
+↓
+ProductList
+↓
+ProductCard
+```
+
+rápidamente aparece prop drilling.
+
+### Primera pieza: useReducer
+
+Definimos un estado:
+
+```tsx
+type CartState = {
+  items: string[]
+}
+```
+
+Acciones:
+
+```tsx
+type CartAction =
+  | {
+      type: "ADD_ITEM"
+      payload: string
+    }
+  | {
+      type: "REMOVE_ITEM"
+      payload: string
+    }
+```
+
+Reducer:
+
+```tsx
+function cartReducer(
+  state: CartState,
+  action: CartAction
+): CartState {
+  switch (action.type) {
+    case "ADD_ITEM":
+      return {
+        items: [
+          ...state.items,
+          action.payload
+        ]
+      }
+
+    case "REMOVE_ITEM":
+      return {
+        items: state.items.filter(
+          item =>
+            item !== action.payload
+        )
+      }
+
+    default:
+      return state
+  }
+}
+```
+
+Hasta aquí solo resolvimos la lógica.
+
+Todavía no compartimos nada.
+
+### Segunda pieza: Context
+
+Creamos un contexto:
+
+```tsx
+import {
+  createContext
+} from "react"
+
+type CartContextValue = {
+  state: CartState
+  dispatch:
+    React.Dispatch<CartAction>
+}
+
+const CartContext =
+  createContext<
+    CartContextValue | null
+  >(null)
+```
+
+### El Provider
+
+Ahora combinamos ambas herramientas:
+
+```tsx
+import {
+  useReducer
+} from "react"
+
+function CartProvider({
+  children
+}: {
+  children: React.ReactNode
+}) {
+  const [state, dispatch] =
+    useReducer(
+      cartReducer,
+      {
+        items: []
+      }
+    )
+
+  return (
+    <CartContext.Provider
+      value={{
+        state,
+        dispatch
+      }}
+    >
+      {children}
+    </CartContext.Provider>
+  )
+}
+```
+### Consumir el estado
+
+Cualquier componente descendiente puede acceder:
+
+```tsx
+import {
+  useContext
+} from "react"
+
+function CartSummary() {
+  const cart =
+    useContext(CartContext)
+
+  if (!cart) {
+    return null
+  }
+
+  return (
+    <p>
+      Items:
+      {cart.state.items.length}
+    </p>
+  )
+}
+```
+
+### Actualizar el estado
+
+También puede despachar acciones:
+
+```tsx
+function AddButton() {
+  const cart =
+    useContext(CartContext)
+
+  if (!cart) {
+    return null
+  }
+
+  return (
+    <button
+      onClick={() =>
+        cart.dispatch({
+          type: "ADD_ITEM",
+          payload: "Laptop"
+        })
+      }
+    >
+      Add
+    </button>
+  )
+}
+```
+
+### ¿Por qué se parece a Redux?
+
+Porque aparecen exactamente los mismos conceptos:
+
+```text
+State
+↓
+Reducer
+↓
+Actions
+↓
+Dispatch
+```
+
+Por ejemplo:
+
+```tsx
+dispatch({
+  type: "ADD_ITEM",
+  payload: "Laptop"
+})
+```
+
+es prácticamente idéntico a Redux.
+
+### La diferencia con Redux
+
+Redux agrega muchas capacidades extra:
+
+* DevTools.
+* Middleware.
+* Time travel debugging.
+* Selectores.
+* Ecosistema enorme.
+* Herramientas avanzadas de rendimiento.
+
+Mientras que Context + useReducer es una solución mucho más simple y liviana.
+
+### Arquitectura típica
+
+Es muy común ver algo así:
+
+```tsx
+<AuthProvider>
+  <CartProvider>
+    <ThemeProvider>
+      <App />
+    </ThemeProvider>
+  </CartProvider>
+</AuthProvider>
+```
+
+Cada Provider encapsula:
+
+```text
+Estado
++
+Reducer
++
+Context
+```
+
+para una responsabilidad específica.
+
+### ¿Es una buena práctica?
+
+Sí, especialmente para aplicaciones pequeñas y medianas.
+
+Permite:
+
+* evitar prop drilling,
+* centralizar la lógica,
+* mantener dependencias mínimas,
+* no agregar librerías externas.
+
+### ¿Es un reemplazo completo de Redux?
+
+No necesariamente.
+
+Cuando una aplicación crece mucho:
+
+```text
+Decenas de contextos
+Miles de componentes
+Actualizaciones frecuentes
+```
+
+comienzan a aparecer problemas de rendimiento y escalabilidad que veremos en el siguiente tema.
+
+Por eso muchas aplicaciones modernas terminan utilizando herramientas especializadas como:
+
+* Zustand
+* Jotai
+* Redux Toolkit
+
+### En resumen
+
+La combinación de Context y `useReducer` permite construir una solución de estado global utilizando únicamente herramientas nativas de React. `useReducer` centraliza la lógica de actualización mediante acciones y reducers, mientras que Context distribuye el estado y el `dispatch` a cualquier componente del árbol. Este patrón comparte muchos conceptos con Redux y suele ser suficiente para aplicaciones pequeñas y medianas sin necesidad de incorporar librerías externas.
