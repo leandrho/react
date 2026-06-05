@@ -15,13 +15,13 @@ El código JSX que escribimos no es entendido directamente por el navegador. Ant
 
 Por ejemplo:
 
-```tsx id="yngoxh"
+```tsx
 const element = <h1>Hello</h1>
 ```
 
 se transpila aproximadamente a:
 
-```js id="sqjotv"
+```js
 const element = React.createElement(
   "h1",
   null,
@@ -215,7 +215,7 @@ devuelve:
 
 Y React sí renderiza números, por lo que aparecería:
 
-```text id="k63d7o"
+```text
 0
 ```
 
