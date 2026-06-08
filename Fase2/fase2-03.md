@@ -1984,8 +1984,7 @@ type ModalProps = {
 function Modal({
   ref
 }: ModalProps) {
-  const [isOpen, setIsOpen] =
-    useState(false)
+  const [isOpen, setIsOpen] =  useState(false)
 
   useImperativeHandle(ref, () => ({
     open() {
@@ -2007,8 +2006,7 @@ Uso:
 
 ```tsx
 function App() {
-  const modalRef =
-    useRef<ModalHandle>(null)
+  const modalRef = useRef<ModalHandle>(null)
 
   return (
     <>
@@ -2156,8 +2154,7 @@ function Input() {
 }
 
 function App() {
-  const inputRef =
-    useRef<HTMLInputElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
 
   return (
     <Input ref={inputRef} />
@@ -2191,8 +2188,7 @@ Y utilizarse así:
 
 ```tsx
 function App() {
-  const inputRef =
-    useRef<HTMLInputElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
 
   return (
     <Input ref={inputRef} />
@@ -2321,8 +2317,7 @@ forwardRef deja de ser necesario en muchos casos
 Permite almacenar valores mutables que persisten entre renders sin provocar nuevos renderizados.
 
 ```tsx
-const inputRef =
-  useRef<HTMLInputElement>(null)
+const inputRef =  useRef<HTMLInputElement>(null)
 ```
 
 ---
