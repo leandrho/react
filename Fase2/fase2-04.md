@@ -63,8 +63,7 @@ React proporciona dos herramientas fundamentales:
 Para gestionar estados complejos y centralizar la lógica de actualización.
 
 ```tsx
-const [state, dispatch] =
-  useReducer(reducer, initialState)
+const [state, dispatch] = useReducer(reducer, initialState)
 ```
 
 #### Context API
@@ -172,8 +171,7 @@ type FormState = {
 Con `useState` podríamos tener:
 
 ```tsx
-const [form, setForm] =
-  useState<FormState>(...)
+const [form, setForm] = useState<FormState>(...)
 ```
 
 Y luego:
