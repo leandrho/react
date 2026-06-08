@@ -493,10 +493,7 @@ type AuthContextValue = {
   user: string | null
 }
 
-const AuthContext =
-  createContext<AuthContextValue | null>(
-    null
-  )
+const AuthContext = createContext<AuthContextValue | null>( null )
 ```
 
 `createContext` crea un objeto que representa el contexto.
@@ -520,9 +517,7 @@ function App() {
   const user = "Leandro"
 
   return (
-    <AuthContext.Provider
-      value={{ user }}
-    >
+    <AuthContext.Provider value={ { user } } >
       <Layout />
     </AuthContext.Provider>
   )
@@ -546,8 +541,7 @@ import { useContext } from "react"
 
 ```tsx
 function UserMenu() {
-  const auth =
-    useContext(AuthContext)
+  const auth = useContext(AuthContext)
 
   return (
     <p>{auth?.user}</p>
@@ -580,9 +574,7 @@ Cuando lo encuentra: `Devuelve value`
 Supongamos:
 
 ```tsx
-<AuthContext.Provider
-  value={{ user }}
->
+<AuthContext.Provider value={ { user } } >
 ```
 
 y luego:
@@ -649,16 +641,11 @@ type ThemeContextValue = {
 ```
 
 ```tsx
-const ThemeContext =
-  createContext<
-    ThemeContextValue | null
-  >(null)
+const ThemeContext = createContext< ThemeContextValue | null >(null)
 ```
 
 ```tsx
-<ThemeContext.Provider
-  value={{ theme }}
->
+<ThemeContext.Provider value={ { theme } }>
   <App />
 </ThemeContext.Provider>
 ```
@@ -666,8 +653,7 @@ const ThemeContext =
 Consumir:
 
 ```tsx
-const theme =
-  useContext(ThemeContext)
+const theme = useContext(ThemeContext)
 ```
 
 ### Casos de uso comunes
@@ -823,20 +809,14 @@ Todavía no compartimos nada.
 Creamos un contexto:
 
 ```tsx
-import {
-  createContext
-} from "react"
+import { createContext } from "react"
 
 type CartContextValue = {
   state: CartState
-  dispatch:
-    React.Dispatch<CartAction>
+  dispatch: React.Dispatch<CartAction>
 }
 
-const CartContext =
-  createContext<
-    CartContextValue | null
-  >(null)
+const CartContext = createContext< CartContextValue | null >(null)
 ```
 
 ### El Provider
@@ -844,30 +824,17 @@ const CartContext =
 Ahora combinamos ambas herramientas:
 
 ```tsx
-import {
-  useReducer
-} from "react"
+import { useReducer } from "react"
 
 function CartProvider({
   children
 }: {
   children: React.ReactNode
 }) {
-  const [state, dispatch] =
-    useReducer(
-      cartReducer,
-      {
-        items: []
-      }
-    )
+  const [state, dispatch] = useReducer ( cartReducer, { items: [] } )
 
   return (
-    <CartContext.Provider
-      value={{
-        state,
-        dispatch
-      }}
-    >
+    <CartContext.Provider value={{ state, dispatch }} >
       {children}
     </CartContext.Provider>
   )
@@ -878,13 +845,10 @@ function CartProvider({
 Cualquier componente descendiente puede acceder:
 
 ```tsx
-import {
-  useContext
-} from "react"
+import { useContext } from "react"
 
 function CartSummary() {
-  const cart =
-    useContext(CartContext)
+  const cart = useContext(CartContext)
 
   if (!cart) {
     return null
@@ -892,8 +856,7 @@ function CartSummary() {
 
   return (
     <p>
-      Items:
-      {cart.state.items.length}
+      Items: {cart.state.items.length}
     </p>
   )
 }
@@ -905,8 +868,7 @@ También puede despachar acciones:
 
 ```tsx
 function AddButton() {
-  const cart =
-    useContext(CartContext)
+  const cart = useContext(CartContext)
 
   if (!cart) {
     return null
@@ -1102,8 +1064,7 @@ Este es el punto clave.
 Cuando hacemos:
 
 ```tsx
-const context =
-  useContext(AppContext)
+const context = useContext(AppContext)
 ```
 
 React no sabe qué parte del objeto estás usando.
@@ -1249,8 +1210,7 @@ para mantener estable la referencia.
 Supongamos:
 
 ```tsx
-const [state, dispatch] =
-  useReducer(...)
+const [state, dispatch] = useReducer(...)
 ```
 
 y luego:
@@ -1290,15 +1250,13 @@ Precisamente para resolver este problema.
 Estas librerías permiten:
 
 ```text
-Suscribirse a una parte específica
-del estado
+Suscribirse a una parte específica del estado
 ```
 
 Por ejemplo:
 
 ```tsx
-const count =
-  useStore(state => state.count)
+const count = useStore( state => state.count )
 ```
 
 Si cambia:
@@ -1427,8 +1385,7 @@ del estado
 Por ejemplo:
 
 ```tsx
-const count =
-  useStore(state => state.count)
+const count = useStore( state => state.count )
 ```
 
 Ahora:
@@ -1485,10 +1442,7 @@ const useCounterStore =
 
 ```tsx
 function Counter() {
-  const count =
-    useCounterStore(
-      state => state.count
-    )
+  const count = useCounterStore( state => state.count )
 
   return <p>{count}</p>
 }
@@ -1497,10 +1451,7 @@ function Counter() {
 
 ```tsx
 function IncrementButton() {
-  const increment =
-    useCounterStore(
-      state => state.increment
-    )
+  const increment = useCounterStore( state => state.increment )
 
   return (
     <button
@@ -1544,20 +1495,17 @@ Atoms
 ```tsx
 import { atom } from "jotai"
 
-const countAtom =
-  atom(0)
+const countAtom = atom(0)
 ```
 
 
 #### Consumirlo
 
 ```tsx
-import { useAtom }
-  from "jotai"
+import { useAtom } from "jotai"
 
 function Counter() {
-  const [count] =
-    useAtom(countAtom)
+  const [count] =  useAtom(countAtom)
 
   return <p>{count}</p>
 }
@@ -1567,10 +1515,7 @@ function Counter() {
 
 ```tsx
 function IncrementButton() {
-  const [
-    ,
-    setCount
-  ] = useAtom(countAtom)
+  const [ , setCount ] = useAtom(countAtom)
 
   return (
     <button
