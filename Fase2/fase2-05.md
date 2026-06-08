@@ -36,8 +36,7 @@ Por eso era habitual ver:
 
 ```tsx
 function UserProfile() {
-  const [user, setUser] =
-    useState<User | null>(null)
+  const [user, setUser] = useState<User | null>(null)
 
   useEffect(() => {
     fetchUser().then(setUser)
@@ -73,15 +72,13 @@ No renderices hasta tenerlos.
 Supongamos:
 
 ```tsx
-const userPromise =
-  fetchUser()
+const userPromise = fetchUser()
 ```
 
 Podemos hacer:
 
 ```tsx
-const user =
-  use(userPromise)
+const user = use(userPromise)
 ```
 
 A primera vista parece algo sencillo, pero internamente ocurre bastante magia.
@@ -100,7 +97,7 @@ Todo funciona normalmente.
 
 ### ¿Qué pasa si la promesa sigue pendiente?
 
-Aquí aparece Suspense.
+Aquí aparece _Suspense_.
 
 React detecta:
 
@@ -157,15 +154,13 @@ El otro uso importante es consumir contextos.
 Tradicionalmente:
 
 ```tsx
-const auth =
-  useContext(AuthContext)
+const auth = useContext(AuthContext)
 ```
 
 Con `use`:
 
 ```tsx
-const auth =
-  use(AuthContext)
+const auth = use(AuthContext)
 ```
 
 El resultado es exactamente el mismo.
@@ -185,8 +180,7 @@ Por eso esto es inválido:
 
 ```tsx
 if (isLoggedIn) {
-  const auth =
-    useContext(AuthContext)
+  const auth =  useContext(AuthContext)
 }
 ```
 
@@ -202,8 +196,7 @@ Por eso esto sí es válido:
 
 ```tsx
 if (isLoggedIn) {
-  const auth =
-    use(AuthContext)
+  const auth = use(AuthContext)
 }
 ```
 
@@ -211,8 +204,7 @@ e incluso:
 
 ```tsx
 for (const context of contexts) {
-  const value =
-    use(context)
+  const value = use(context)
 }
 ```
 
