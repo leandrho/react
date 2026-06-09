@@ -442,3 +442,458 @@ En ambos casos existe una jerarquía donde los nodos superiores proporcionan com
 ### En resumen
 
 `createBrowserRouter` es el punto de entrada del sistema moderno de routing de React Router. Su función es definir un árbol completo de rutas que describe cómo está organizada la navegación de la aplicación. Cada ruta puede contener componentes, rutas hijas y posteriormente loaders, actions y manejo de errores. El modelo mental correcto no es pensar en páginas aisladas, sino en una jerarquía de rutas que refleja la estructura visual y funcional de la aplicación.
+
+---
+
+# Rutas anidadas y layouts compartidos
+
+Uno de los conceptos más importantes de React Router v6 es que las rutas forman un **árbol jerárquico**, no una lista plana.
+
+De hecho, la mayoría de las aplicaciones reales tienen una estructura visual que ya es jerárquica:
+
+```text
+Navbar
+↓
+Contenido de página
+↓
+Footer
+```
+
+o incluso:
+
+```text
+Dashboard
+├─ Sidebar
+├─ Header
+└─ Contenido
+```
+
+Sería muy incómodo repetir estos elementos en cada página.
+
+Por eso React Router introduce el concepto de **layouts compartidos** mediante rutas anidadas.
+
+## El problema
+
+Supongamos estas páginas:
+
+```text
+/
+about
+contact
+```
+
+Todas comparten:
+
+```text
+Navbar
+Footer
+```
+
+Sin layouts podríamos terminar haciendo:
+
+```tsx
+function HomePage() {
+  return (
+    <>
+      <Navbar />
+      <Home />
+      <Footer />
+    </>
+  )
+}
+```
+
+y luego:
+
+```tsx
+function AboutPage() {
+  return (
+    <>
+      <Navbar />
+      <About />
+      <Footer />
+    </>
+  )
+}
+```
+
+Repitiendo la misma estructura una y otra vez.
+
+## La solución: Layout Route
+
+Creamos un componente:
+
+```tsx
+function RootLayout() {
+  return (
+    <>
+      <Navbar />
+
+      <Outlet />
+
+      <Footer />
+    </>
+  )
+}
+```
+
+Aquí aparece algo nuevo:
+
+```tsx
+<Outlet />
+```
+
+## ¿Qué es Outlet?
+
+`Outlet` es un marcador de posición.
+
+Podemos imaginarlo como:
+
+```text
+Renderizar aquí
+la ruta hija activa
+```
+
+Por ejemplo:
+
+```tsx
+<Navbar />
+
+<Outlet />
+
+<Footer />
+```
+
+significa:
+
+```text
+Navbar
+↓
+Página actual
+↓
+Footer
+```
+
+## Definir las rutas
+
+```tsx
+const router =
+  createBrowserRouter([
+    {
+      path: "/",
+      element: <RootLayout />,
+      children: [
+        {
+          index: true,
+          element: <HomePage />
+        },
+        {
+          path: "about",
+          element: <AboutPage />
+        },
+        {
+          path: "contact",
+          element: <ContactPage />
+        }
+      ]
+    }
+  ])
+```
+
+## Qué ocurre cuando visitamos "/"
+
+React Router encuentra:
+
+```text
+RootLayout
+↓
+HomePage
+```
+
+Resultado:
+
+```text
+Navbar
+HomePage
+Footer
+```
+
+## Qué ocurre cuando visitamos "/about"
+
+React Router encuentra:
+
+```text
+RootLayout
+↓
+AboutPage
+```
+
+Resultado:
+
+```text
+Navbar
+AboutPage
+Footer
+```
+
+## El árbol de renderizado
+
+URL:
+
+```text
+/about
+```
+ 
+Árbol de rutas:
+
+```text
+RootLayout
+└─ AboutPage
+```
+
+Árbol visual:
+
+```text
+Navbar
+AboutPage
+Footer
+```
+
+El `Outlet` es donde aparece el contenido hijo.
+
+## Múltiples niveles
+
+Aquí es donde el sistema realmente brilla.
+
+Supongamos:
+
+```text
+/dashboard
+/dashboard/profile
+/dashboard/settings
+```
+
+Podemos crear:
+
+```tsx
+function DashboardLayout() {
+  return (
+    <>
+      <Sidebar />
+
+      <Outlet />
+    </>
+  )
+}
+```
+
+---
+
+Definición:
+
+```tsx
+{
+  path: "dashboard",
+  element: <DashboardLayout />,
+  children: [
+    {
+      path: "profile",
+      element: <ProfilePage />
+    },
+    {
+      path: "settings",
+      element: <SettingsPage />
+    }
+  ]
+}
+```
+
+Visitar:
+
+```text
+/dashboard/profile
+```
+
+produce:
+
+```text
+DashboardLayout
+└─ ProfilePage
+```
+
+Visualmente:
+
+```text
+Sidebar
+ProfilePage
+```
+
+## Layouts dentro de layouts
+
+Nada impide tener:
+
+```text
+RootLayout
+└─ DashboardLayout
+   └─ ProfilePage
+```
+
+Por ejemplo:
+
+```tsx
+{
+  path: "/",
+  element: <RootLayout />,
+  children: [
+    {
+      path: "dashboard",
+      element: <DashboardLayout />,
+      children: [
+        {
+          path: "profile",
+          element: <ProfilePage />
+        }
+      ]
+    }
+  ]
+}
+```
+
+URL:
+
+```text
+/dashboard/profile
+```
+
+Renderiza:
+
+```text
+RootLayout
+└─ DashboardLayout
+   └─ ProfilePage
+```
+
+Visualmente:
+
+```text
+Navbar
+Sidebar
+ProfilePage
+Footer
+```
+
+## La gran idea
+
+React Router no renderiza una sola ruta.
+
+Renderiza una cadena de coincidencias.
+
+Por ejemplo:
+
+```text
+/dashboard/profile
+```
+
+coincide con:
+
+```text
+/
+dashboard
+profile
+```
+
+y renderiza:
+
+```text
+RootLayout
+↓
+DashboardLayout
+↓
+ProfilePage
+```
+## ¿Por qué es tan importante?
+
+Porque refleja cómo pensamos las aplicaciones modernas.
+
+No pensamos:
+
+```text
+Página Home
+Página About
+Página Contact
+```
+
+Pensamos:
+
+```text
+Layout principal
+↓
+Secciones
+↓
+Subsecciones
+```
+
+Y React Router modela exactamente esa estructura.
+
+## Comparación con componentes
+
+Podemos verlo casi como composición de componentes:
+
+```tsx
+<RootLayout>
+  <DashboardLayout>
+    <ProfilePage />
+  </DashboardLayout>
+</RootLayout>
+```
+
+La diferencia es que React Router decide qué hijos renderizar según la URL actual.
+
+## Errores comunes
+
+### Olvidar el Outlet
+
+```tsx
+function Layout() {
+  return <Navbar />
+}
+```
+
+Las rutas hijas nunca aparecerán.
+
+Debe existir:
+
+```tsx
+function Layout() {
+  return (
+    <>
+      <Navbar />
+      <Outlet />
+    </>
+  )
+}
+```
+
+### Pensar en rutas aisladas
+
+Muchos principiantes imaginan:
+
+```text
+Home
+About
+Contact
+```
+
+como páginas independientes.
+
+React Router moderno piensa en:
+
+```text
+Jerarquías
+Layouts
+Subrutas
+```
+
+### En resumen
+
+Las rutas anidadas permiten modelar la aplicación como una jerarquía de layouts y páginas. Cada ruta padre puede renderizar estructura compartida —como navegación, sidebars o footers— mientras que sus rutas hijas se muestran dentro de un `<Outlet />`. De esta forma, React Router construye la interfaz combinando todas las rutas coincidentes de la URL actual, generando una composición natural de layouts reutilizables y contenido específico para cada sección de la aplicación.
