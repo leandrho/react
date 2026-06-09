@@ -687,8 +687,6 @@ function DashboardLayout() {
 }
 ```
 
----
-
 Definición:
 
 ```tsx
