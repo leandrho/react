@@ -1,8 +1,3 @@
-Aquí tienes el **Roadmap Definitivo Blindado**. He integrado todos los micro-ajustes, dividido el Sprint 3 para evitar el "muro de la frustración" y añadido las reglas de oro para que tu portafolio grite "nivel Mid/Senior".
-
-Este documento está listo para ser tu guía diaria. Cópialo, pégalo en tu Notion/Obsidian y empieza.
-
----
 
 # 🚀 Roadmap Definitivo: 75 Días de Sprints (Next.js 16 & React 19) - Versión Blindada
 
