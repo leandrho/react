@@ -98,3 +98,14 @@ Para asegurar que cubras los **75 días sin excepciones**, aplica estas 3 reglas
    * `git push`
 3. **Documenta mientras avanzas:** Cada vez que resuelvas un error difícil (ej: tipar la sesión de Auth.js), escribe 2 líneas en el `README.md` de tu proyecto explicando cómo lo solucionaste. Eso es oro puro para las entrevistas.
 
+---
+
+### APP que se va a construir durante el roadmap
+
+**DevPulse SaaS** es una plataforma moderna de gestión de tareas y rendimiento optimizada para equipos de ingeniería de software, diseñada bajo los estándares tecnológicos de 2026. El sistema resuelve un problema real de negocio al implementar un control de acceso basado en roles (RBAC): los Líderes de Proyecto (Admins) acceden a un panel global con métricas detalladas para crear, asignar y eliminar tareas, mientras que los Desarrolladores (Miembros) visualizan un dashboard personalizado para actualizar de forma exclusiva el estado de sus pendientes.
+
+Técnicamente, la aplicación explota el potencial de la arquitectura híbrida de **Next.js 16 y React 19**. El flujo inicial está protegido en el Edge mediante Middleware que valida las sesiones de Auth.js (v5) antes de permitir el acceso a las rutas privadas. Para garantizar un rendimiento extremo, los datos del panel se sirven directamente desde el servidor mediante Server Components conectados a una base de datos PostgreSQL a través de Prisma, logrando que la interfaz viaje al navegador con la información lista y optimizada.
+
+El núcleo interactivo del SaaS destaca por el uso de mutaciones modernas y validación estricta en ambos lados. Los formularios se gestionan mediante la combinación de React Hook Form y Zod, procesando las acciones en el servidor con el nuevo hook `useActionState` para un manejo nativo de errores y cargas. Además, el sistema incorpora el hook `useOptimistic` de React 19, permitiendo que cambios críticos —como marcar una tarea por completar— se reflejen instantáneamente en pantalla, eliminando la percepción de latencia de red para el usuario.
+
+Estéticamente, el software adopta una interfaz puramente orientada a desarrolladores, caracterizada por un diseño *Dark Mode* premium construido con Tailwind CSS y componentes de Shadcn UI. La experiencia visual se complementa con un ecosistema robusto de nivel profesional en su etapa de escalado, el cual incluye pruebas de extremo a extremo (E2E) con Playwright, pipelines de integración continua vía GitHub Actions y una contenedorización multi-etapa con Docker optimizada para producción.
